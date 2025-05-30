@@ -4,7 +4,8 @@ import sys
 import json
 import requests
 from datetime import datetime, timedelta
-from global_config.sharepoint_utils import upload_file_to_sharepoint
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
+from sharepoint_utils import upload_file_to_sharepoint
 
 try:
     from dateutil.parser import parse as parse_date
