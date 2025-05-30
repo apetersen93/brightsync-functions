@@ -4,7 +4,7 @@ import sys
 import json
 import requests
 from datetime import datetime, timedelta
-from conflict_debugger.sharepoint_utils import upload_file_to_sharepoint
+from global_config.sharepoint_utils import upload_file_to_sharepoint
 
 try:
     from dateutil.parser import parse as parse_date
