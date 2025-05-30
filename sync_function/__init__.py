@@ -18,3 +18,4 @@ def main(req):
     except subprocess.CalledProcessError as e:
         logging.error(e.stderr)
         return f"❌ Sync failed:\n{e.stderr}"
+        
