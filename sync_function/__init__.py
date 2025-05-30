@@ -19,3 +19,4 @@ def main(req):
         logging.error(e.stderr)
         return f"❌ Sync failed:\n{e.stderr}"
         
+        
