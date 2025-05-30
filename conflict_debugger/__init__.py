@@ -2,6 +2,7 @@ import logging
 import azure.functions as func
 import os
 import sys
+import traceback
 
 # Allow relative import of conflict_debugger.py
 sys.path.append(os.path.dirname(__file__))
@@ -17,5 +18,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         run_debugger(store_key)
         return func.HttpResponse(f"✅ Conflict debugger ran for store: {store_key}", status_code=200)
     except Exception as e:
-        logging.exception("❌ Conflict debugger failed.")
+        logging.error("❌ Conflict debugger failed.")
+        logging.error(traceback.format_exc())
         return func.HttpResponse(f"Error: {str(e)}", status_code=500)
