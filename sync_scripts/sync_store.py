@@ -131,7 +131,7 @@ def load_cache(cfg):
     return {}
 
 def save_cache(cfg, cache):
-    path = os.path.join(cfg["base_dir"], "cache", f"{cfg['store_name']}_bs_cache.json")
+    path = os.path.join("/tmp", f"{cfg['store_name']}_bs_cache.json")
     with open(path, "w") as f:
         json.dump(cache, f, indent=2)
         
