@@ -294,8 +294,7 @@ def sync_store(cfg):
         }
 
     if ready:
-        os.makedirs("sync_ready", exist_ok=True)
-        out_path = os.path.join("sync_ready", f"{cfg['store_name']}_sync_ready.json")
+        out_path = os.path.join("/tmp", f"{cfg['store_name']}_sync_ready.json")
         with open(out_path, "w") as f:
             json.dump(ready, f, indent=2)
         print(f"✅ {len(ready)} SKUs written to {out_path}")
