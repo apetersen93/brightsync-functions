@@ -7,6 +7,14 @@ from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
 from conflict_debugger.sharepoint_utils import upload_file_to_sharepoint
 
+try:
+    from dateutil.parser import parse as parse_date
+except ImportError:
+    import subprocess
+    subprocess.run(["pip", "install", "python-dateutil"])
+    from dateutil.parser import parse as parse_date
+
+
 def load_config(store_key):
     path = os.path.join("store_configs", f"{store_key}_config.json")
     if not os.path.exists(path):
