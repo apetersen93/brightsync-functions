@@ -13,11 +13,23 @@ try:
 except ImportError:
     print("⚠️ Installing python-dateutil at runtime...")
     import subprocess
-    subprocess.run([sys.executable, "-m", "pip", "install", "python-dateutil"])
+    import site
     import importlib
+
+    # Install dateutil
+    subprocess.run([sys.executable, "-m", "pip", "install", "python-dateutil"])
+
+    # Reload site-packages
+    site_packages = site.getsitepackages()
+    for p in site_packages:
+        if p not in sys.path:
+            sys.path.append(p)
+
+    # Dynamically import the module
     dateutil_parser = importlib.import_module("dateutil.parser")
     parse_date = dateutil_parser.parse
-    print("✅ Installed dateutil dynamically.")
+    print("✅ Installed and imported dateutil dynamically.")
+
 
 def load_config(store_key):
     path = os.path.join("store_configs", f"{store_key}_config.json")
