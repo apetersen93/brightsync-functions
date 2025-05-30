@@ -11,13 +11,13 @@ try:
     from dateutil.parser import parse as parse_date
     print("✅ Imported dateutil normally.")
 except ImportError:
-    print("⚠️ Installing dateutil at runtime...")
+    print("⚠️ Installing python-dateutil at runtime...")
     import subprocess
-    subprocess.run(["pip", "install", "python-dateutil"])
-    from dateutil.parser import parse as parse_date
+    subprocess.run([sys.executable, "-m", "pip", "install", "python-dateutil"])
+    import importlib
+    dateutil_parser = importlib.import_module("dateutil.parser")
+    parse_date = dateutil_parser.parse
     print("✅ Installed dateutil dynamically.")
-
-
 
 def load_config(store_key):
     path = os.path.join("store_configs", f"{store_key}_config.json")
