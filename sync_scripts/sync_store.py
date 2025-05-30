@@ -6,30 +6,7 @@ import requests
 from datetime import datetime, timedelta
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
 from sharepoint_utils import upload_file_to_sharepoint
-
-try:
-    from dateutil.parser import parse as parse_date
-    print("✅ Imported dateutil normally.")
-except ImportError:
-    print("⚠️ Installing python-dateutil at runtime...")
-    import subprocess
-    import site
-    import importlib
-
-    # Install dateutil
-    subprocess.run([sys.executable, "-m", "pip", "install", "python-dateutil"])
-
-    # Reload site-packages
-    site_packages = site.getsitepackages()
-    for p in site_packages:
-        if p not in sys.path:
-            sys.path.append(p)
-
-    # Dynamically import the module
-    dateutil_parser = importlib.import_module("dateutil.parser")
-    parse_date = dateutil_parser.parse
-    print("✅ Installed and imported dateutil dynamically.")
-
+from dateutil.parser import parse as parse_date
 
 def load_config(store_key):
     path = os.path.join("store_configs", f"{store_key}_config.json")
