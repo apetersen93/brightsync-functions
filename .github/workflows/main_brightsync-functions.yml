@@ -70,4 +70,4 @@ jobs:
           app-name: 'brightsync-functions'
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_EE88E747B0A54C45BF987943D081AE07 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_CBE0516F84C74D94A143AD89FB59A5D3 }}
