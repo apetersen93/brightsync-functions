@@ -1,21 +1,21 @@
-﻿# -*- coding: utf-8 -*-
-import os
-import sys
+# -*- coding: utf-8 -*-
 import subprocess
+import sys
+import os
 import json
 import requests
 from datetime import datetime, timedelta
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
-from sharepoint_utils import upload_file_to_sharepoint
+
+# ⬇️ Force install to /tmp
+subprocess.run([sys.executable, "-m", "pip", "install", "--target", "/tmp/pip_modules", "python-dateutil"], check=True)
+sys.path.insert(0, "/tmp/pip_modules")
+
+# ⬇️ Now safe to import
 from dateutil.parser import parse as parse_date
 print("✅ Patched import: dateutil loaded from /tmp")
 
-
-# 💥 Install dateutil to writable temp folder
-subprocess.run([sys.executable, "-m", "pip", "install", "--target", "/tmp/pip_modules", "python-dateutil"], check=True)
-
-# 🔧 Inject the installed path into Python runtime
-sys.path.insert(0, "/tmp/pip_modules")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
+from sharepoint_utils import upload_file_to_sharepoint
 
 
 def load_config(store_key):
