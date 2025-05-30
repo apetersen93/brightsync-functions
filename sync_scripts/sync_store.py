@@ -131,9 +131,21 @@ def load_cache(cfg):
     return {}
 
 def save_cache(cfg, cache):
-    path = os.path.join("/tmp", f"{cfg['store_name']}_bs_cache.json")
-    with open(path, "w") as f:
+    tmp_path = os.path.join("/tmp", f"{cfg['store_name']}_bs_cache.json")
+    with open(tmp_path, "w") as f:
         json.dump(cache, f, indent=2)
+
+    with open(tmp_path, "rb") as f:
+        file_bytes = f.read()
+
+    upload_file_to_sharepoint(
+        filename=f"{cfg['store_name']}_bs_cache.json",
+        file_bytes=file_bytes,
+        target_path=f"Webstore Assets/BrightSync/cache/{cfg['store_name']}_bs_cache.json"
+    )
+    print("📤 Uploaded updated cache to SharePoint")
+
+
         
 def load_conflict_flags(store_name):
     path = os.path.join("cache", "conflict_flags.json")
