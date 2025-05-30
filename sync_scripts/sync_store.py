@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import requests
+from conflict_debugger.sharepoint_utils import upload_file_to_sharepoint
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
 from conflict_debugger.sharepoint_utils import upload_file_to_sharepoint
