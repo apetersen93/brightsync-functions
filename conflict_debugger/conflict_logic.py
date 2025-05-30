@@ -55,6 +55,21 @@ def scan_conflicts(cfg):
     cache_path = os.path.join(cache_dir, f"{store_name}_bs_cache.json")
     conflict_flags_path = os.path.join(cache_dir, "conflict_flags.json")
 
+    # 📤 Upload to SharePoint if a report was written
+    if conflict_rows:
+        try:
+            from sharepoint_utils import upload_file_to_sharepoint
+            with open(out_path, "rb") as f:
+                file_bytes = f.read()
+    
+            # Push to the SharePoint folder: /Webstore Assets/BrightSync/conflict_reports/
+            target_path = f"Webstore Assets/BrightSync/conflict_reports/{store_name}_conflict_report_{date_stamp}.csv"
+            upload_file_to_sharepoint(filename=os.path.basename(out_path), file_bytes=file_bytes, target_path=target_path)
+            print(f"📤 Uploaded conflict report to SharePoint: {target_path}")
+        except Exception as e:
+            print(f"❌ Failed to upload to SharePoint: {e}")
+
+
     try:
         with open(cache_path, "r") as f:
             bs_cache = json.load(f)
