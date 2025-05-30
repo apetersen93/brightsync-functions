@@ -50,10 +50,9 @@ def scan_conflicts(cfg):
     store_name = cfg["store_name"]
     date_threshold = datetime.now() - timedelta(days=cfg["inclusion_days"])
 
-    cache_dir = os.path.join(".", "cache")
-    os.makedirs(cache_dir, exist_ok=True)
-    cache_path = os.path.join(cache_dir, f"{store_name}_bs_cache.json")
-    conflict_flags_path = os.path.join(cache_dir, "conflict_flags.json")
+    tmp_dir = "/tmp"
+    cache_path = os.path.join(tmp_dir, f"{store_name}_bs_cache.json")
+    conflict_flags_path = os.path.join(tmp_dir, "conflict_flags.json")
 
     try:
         with open(cache_path, "r") as f:
@@ -181,10 +180,7 @@ def scan_conflicts(cfg):
             conflict_pids.add(pid)
 
     # 📟 Write report
-    folder = os.path.join(".", "conflict_reports")
-    os.makedirs(folder, exist_ok=True)
-    date_stamp = datetime.now().strftime("%Y%m%d")
-    out_path = os.path.join(folder, f"{store_name}_conflict_report_{date_stamp}.csv")
+    out_path = os.path.join("/tmp", f"{store_name}_conflict_report_{date_stamp}.csv")
 
     if conflict_rows:
         with open(out_path, "w", newline="", encoding="utf-8") as f:
@@ -235,6 +231,20 @@ def scan_conflicts(cfg):
     with open(conflict_flags_path, "w") as f:
         json.dump(all_flags, f, indent=2)
     print(f"📌 Conflict flags updated: {conflict_flags_path}")
+    
+    # Upload JSON to SharePoint
+    try:
+        with open(conflict_flags_path, "rb") as f:
+            flags_bytes = f.read()
+        upload_file_to_sharepoint(
+            filename="conflict_flags.json",
+            file_bytes=flags_bytes,
+            target_path="Webstore Assets/BrightSync/cache/conflict_flags.json"
+        )
+        print("📤 Uploaded conflict_flags.json to SharePoint")
+    except Exception as e:
+        print(f"❌ Failed to upload conflict_flags.json to SharePoint: {e}")
+
 
 # ▶️ Run for one store or all
 def run_debugger(store_key):
