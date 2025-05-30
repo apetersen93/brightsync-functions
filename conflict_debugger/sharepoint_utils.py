@@ -15,15 +15,16 @@ def get_graph_token():
     return r.json()["access_token"]
 
 def upload_file_to_sharepoint(filename, file_bytes, target_path):
-    token = get_graph_token()
+    access_token = get_graph_token()  # your auth code
+    site_id = os.environ["GRAPH_SITE_ID"]
+    drive_id = os.environ["GRAPH_DRIVE_ID"]
+
+    url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}/root:/{target_path}:/content"
     headers = {
-        "Authorization": f"Bearer {token}",
+        "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/octet-stream"
     }
-
-    url = f"https://graph.microsoft.com/v1.0/sites/cpppromos.sharepoint.com:/sites/CreativeTWassets:/drive/root:/{target_path}:/content"
-
     r = requests.put(url, headers=headers, data=file_bytes)
     r.raise_for_status()
-    return r.json()
+
 
