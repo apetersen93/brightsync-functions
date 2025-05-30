@@ -9,10 +9,14 @@ from conflict_debugger.sharepoint_utils import upload_file_to_sharepoint
 
 try:
     from dateutil.parser import parse as parse_date
+    print("✅ Imported dateutil normally.")
 except ImportError:
+    print("⚠️ Installing dateutil at runtime...")
     import subprocess
     subprocess.run(["pip", "install", "python-dateutil"])
     from dateutil.parser import parse as parse_date
+    print("✅ Installed dateutil dynamically.")
+
 
 
 def load_config(store_key):
