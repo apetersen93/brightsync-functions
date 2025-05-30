@@ -17,7 +17,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         run_debugger(store_key)
         return func.HttpResponse(f"✅ Conflict debugger ran for store: {store_key}", status_code=200)
     except Exception as e:
-        error_text = traceback.format_exc()
-        print("❌ Conflict debugger error:\n" + error_text)
-        sys.stdout.flush()  # Ensure logs are sent to Azure
+        import traceback
+        logging.error("❌ Conflict debugger failed:\n%s", traceback.format_exc())
         return func.HttpResponse(f"Error: {str(e)}", status_code=500)
+
