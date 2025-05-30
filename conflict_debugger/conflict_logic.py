@@ -42,7 +42,7 @@ def should_include_product(cfg, sku, vendors):
 
 # 🔍 Main conflict scan
 def scan_conflicts(cfg):
-    from sharepoint_utils import upload_file_to_sharepoint
+    from global_config.sharepoint_utils import upload_file_to_sharepoint
 
     store_name = cfg["store_name"]
     base_url = cfg["brightstores_url"]
