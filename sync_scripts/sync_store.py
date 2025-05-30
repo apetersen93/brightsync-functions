@@ -5,6 +5,7 @@ import json
 import requests
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
+from conflict_debugger.sharepoint_utils import upload_file_to_sharepoint
 
 def load_config(store_key):
     path = os.path.join("store_configs", f"{store_key}_config.json")
@@ -274,6 +275,19 @@ def sync_store(cfg):
         with open(out_path, "w") as f:
             json.dump(ready, f, indent=2)
         print(f"✅ {len(ready)} SKUs written to {out_path}")
+
+    # Push the sync file to SharePoint
+    try:
+        upload_file_to_sharepoint(
+            local_path=out_path,
+            sharepoint_folder="sync_ready",  # Or "Shared Documents/sync_ready" depending on your structure
+            filename=os.path.basename(out_path)
+        )
+        print("☁️ Uploaded sync file to SharePoint.")
+    except Exception as e:
+        print(f"⚠️ Failed to upload to SharePoint: {e}")
+
+    
     else:
         print(f"🟢 No SKUs to sync for {cfg['store_name']} — skipping file write.")
 
