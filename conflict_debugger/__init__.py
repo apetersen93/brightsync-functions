@@ -12,7 +12,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse("Missing store_key parameter", status_code=400)
 
     try:
-        from conflict_debugger import run_debugger
+        from conflict_logic import run_debugger  # ✅ FIXED import
         run_debugger(store_key)
         return func.HttpResponse(f"✅ Conflict debugger ran for store: {store_key}", status_code=200)
     except Exception as e:
