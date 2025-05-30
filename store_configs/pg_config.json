@@ -1,0 +1,15 @@
+{
+  "alias": "PressGaney",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "pg",
+  "brightstores_url": "https://pressganey.mybrightsites.com",
+  "brightstores_token": "fKZEb95DJGcAVH2Sfd6z",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INV-": 125696
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}

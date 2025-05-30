@@ -1,0 +1,16 @@
+{
+  "alias": "Tyto",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "ty",
+  "brightstores_url": "https://tyto.mybrightsites.com",
+  "brightstores_token": "SZJxdHcN7Bdr1y5psE_A",
+  "filter_mode": "all",
+  "prefix_to_tag": {
+      "ty": 125696
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}
+

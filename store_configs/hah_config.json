@@ -1,0 +1,15 @@
+{
+  "alias": "Help at Home",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "hah",
+  "brightstores_url": "https://helpathome.mybrightsites.com",
+  "brightstores_token": "iGiGsXk9khk7zV5kWDPx",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INV-": 147215
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}

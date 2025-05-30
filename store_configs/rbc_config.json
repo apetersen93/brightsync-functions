@@ -1,0 +1,15 @@
+{
+  "alias": "Republic Bank",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "rbc",
+  "brightstores_url": "https://republicbank.mybrightsites.com",
+  "brightstores_token": "pkxaPmBT9T_psMGd-dKT",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INV-": 125696
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}

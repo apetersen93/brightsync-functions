@@ -1,0 +1,14 @@
+{
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "cdk",
+  "brightstores_url": "https://cdk.mybrightsites.com",
+  "brightstores_token": "TzsyqMyGdZHiVRR2yhqg",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INVCL-": 147215
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}

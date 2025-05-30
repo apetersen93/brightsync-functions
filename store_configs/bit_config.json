@@ -1,0 +1,15 @@
+{
+  "alias": "Bitzer",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "bit",
+  "brightstores_url": "https://bitzer.mybrightsites.com",
+  "brightstores_token": "iGiGsXk9khk7zV5kWDPx",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INV-": 125696
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}

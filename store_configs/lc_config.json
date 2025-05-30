@@ -1,0 +1,16 @@
+{
+  "Alias": "La Colombe",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "lc",
+  "brightstores_url": "https://lacolombe.mybrightsites.com",
+  "brightstores_token": "iD33i8u6sC-u7rseT-vQ",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INVCL-": 147215,
+      "-INVCRE-": 125696
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}

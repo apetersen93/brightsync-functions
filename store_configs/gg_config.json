@@ -1,0 +1,15 @@
+{
+  "alias": "GumGum",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "gg",
+  "brightstores_url": "https://gumgum.mybrightsites.com",
+  "brightstores_token": "zKkiy1C2XDusH78M94y9",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INV-": 125696
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}

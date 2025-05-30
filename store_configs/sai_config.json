@@ -1,0 +1,15 @@
+{
+  "alias": "SheildAI",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "SAI",
+  "brightstores_url": "https://shieldai.mybrightsites.com",
+  "brightstores_token": "t_1ZQeYM2MwTMmU8yyky",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INV-": 125696
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}

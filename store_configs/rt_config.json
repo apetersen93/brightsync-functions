@@ -1,0 +1,15 @@
+{
+  "alias": "Ryan Specialty",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "rt",
+  "brightstores_url": "https://rsg.mybrightsites.com",
+  "brightstores_token": "tLzS1AsspLdM5RSWjgSP",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INV-": 125696
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}

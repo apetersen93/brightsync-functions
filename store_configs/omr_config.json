@@ -1,0 +1,15 @@
+{
+  "alias": "Omron",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "omr",
+  "brightstores_url": "https://omronstore.mybrightsites.com",
+  "brightstores_token": "-6Dsysq1p93VC-5u99Q_",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INV-": 125696
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}

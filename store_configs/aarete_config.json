@@ -1,0 +1,16 @@
+{
+  "alias": "Aarete",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "aarete",
+  "brightstores_url": "https://aareteshop.mybrightsites.com",
+  "brightstores_token": "7pcAGbGvYupxyyS7jLxm",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INV-": 125696
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": false,
+  "test_mode": false
+}
+

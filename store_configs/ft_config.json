@@ -1,0 +1,18 @@
+{
+  "alias": "Fivetran",
+  "_comment": "filter_mode options: sku, vendor, sku_or_vendor, all",
+  "store_name": "ft",
+  "brightstores_url": "https://fivetran.mybrightsites.com",
+  "brightstores_token": "j7m2M43YSjpV2YYBWxrM",
+  "filter_mode": "sku",
+  "prefix_to_tag": {
+      "-INV-": 125696,
+      "-STR-": 125696,
+      "-PNR-": 125696,
+      "-MKT-": 125696
+  },
+  "base_dir": "./",
+  "inclusion_days": 90,
+  "include_inactive": true,
+  "test_mode": false
+}
