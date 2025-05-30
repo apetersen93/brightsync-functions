@@ -1,0 +1,2 @@
+git add conflict_reports/.keep
+git commit -m "Add conflict_reports folder for Azure output"
