@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
 from sharepoint_utils import upload_file_to_sharepoint
 from dateutil.parser import parse as parse_date
+print("✅ Patched import: dateutil loaded from /tmp")
+
 
 # 💥 Install dateutil to writable temp folder
 subprocess.run([sys.executable, "-m", "pip", "install", "--target", "/tmp/pip_modules", "python-dateutil"], check=True)
