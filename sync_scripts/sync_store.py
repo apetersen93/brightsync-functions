@@ -299,14 +299,18 @@ def sync_store(cfg):
         print(f"✅ {len(ready)} SKUs written to {out_path}")
                 # Push the sync file to SharePoint
         try:
+            with open(out_path, "rb") as f:
+                file_bytes = f.read()
+    
             upload_file_to_sharepoint(
-                local_path=out_path,
-                sharepoint_folder="sync_ready",  # Or "Shared Documents/sync_ready" depending on your structure
-                filename=os.path.basename(out_path)
+                filename=os.path.basename(out_path),
+                file_bytes=file_bytes,
+                target_path=f"Webstore Assets/BrightSync/sync_ready/{os.path.basename(out_path)}"
             )
             print("☁️ Uploaded sync file to SharePoint.")
         except Exception as e:
             print(f"⚠️ Failed to upload to SharePoint: {e}")
+
     else:
         print(f"🟢 No SKUs to sync for {cfg['store_name']} — skipping file write.")
 
