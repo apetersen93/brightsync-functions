@@ -5,6 +5,8 @@ import os
 import json
 import requests
 from datetime import datetime, timedelta
+from sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint, get_graph_token
+
 
 # ⬇️ Force install to /tmp
 subprocess.run([sys.executable, "-m", "pip", "install", "--target", "/tmp/pip_modules", "python-dateutil"], check=True)
@@ -14,7 +16,6 @@ from dateutil.parser import parse as parse_date
 print("✅ Patched import: dateutil loaded from /tmp")
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
-from sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint
 
 def load_config(store_key):
     try:
@@ -25,6 +26,33 @@ def load_config(store_key):
         return json.loads(file_bytes)
     except Exception as e:
         raise FileNotFoundError(f"❌ Failed to load config from SharePoint: {e}")
+
+def delete_old_sync_file(cfg):
+    try:
+        access_token = get_graph_token()
+        site_id = os.environ["GRAPH_SITE_ID"]
+        drive_id = os.environ["GRAPH_DRIVE_ID"]
+        target_name = f"{cfg['store_name']}_sync_ready.json"
+
+        list_url = (
+            f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}"
+            f"/root:/Webstore Assets/BrightSync/sync_ready:/children"
+        )
+        headers = {"Authorization": f"Bearer {access_token}"}
+        r = requests.get(list_url, headers=headers)
+        r.raise_for_status()
+        files = r.json().get("value", [])
+
+        for f in files:
+            if f.get("name") == target_name:
+                del_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}/items/{f['id']}"
+                del_r = requests.delete(del_url, headers=headers)
+                del_r.raise_for_status()
+                print(f"🗑️ Deleted old sync file: {target_name}")
+                break
+    except Exception as e:
+        print(f"⚠️ Could not delete old sync file: {e}")
+        
 
 def load_cache(cfg):
     try:
@@ -318,4 +346,5 @@ if __name__ == "__main__":
 
     key = sys.argv[1].lower()
     cfg = load_config(key)
+    delete_old_sync_file(cfg)
     sync_store(cfg)
