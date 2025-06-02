@@ -5,7 +5,7 @@ import os
 import json
 import requests
 from datetime import datetime, timedelta
-from sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint, get_graph_token
+from global_config.sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint, get_graph_token
 
 
 # ⬇️ Force install to /tmp
