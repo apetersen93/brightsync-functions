@@ -1,9 +1,17 @@
 # engine_core.py
 import os
+import sys
 import json
-import requests
 import csv
-from sharepoint_utils import upload_file_to_sharepoint
+import requests
+import subprocess
+
+subprocess.run([sys.executable, "-m", "pip", "install", "--target", "/tmp/pip_modules", "python-dateutil"], check=True)
+sys.path.insert(0, "/tmp/pip_modules")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
+
+from dateutil.parser import parse as parse_date
+from sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint, get_graph_token
 
 def engine_main(sync_file_path):
     store_name = os.path.basename(sync_file_path).split("_")[0]
@@ -57,6 +65,7 @@ def engine_main(sync_file_path):
 
     for item in products:
         update_product(item)
+    print(f"🔁 Processed {len(products)} SKUs from sync file.")
 
     if missing:
         print(f"⚠️ {len(missing)} products missing — writing to CSV + JSON...")
@@ -78,8 +87,9 @@ def engine_main(sync_file_path):
             json.dump(missing, f, indent=2)
 
         # ⬆️ Upload both to SharePoint
-        upload_file_to_sharepoint(json_path, "missing_products")
-        upload_file_to_sharepoint(csv_path, "missing_products")
+        for path in [json_path, csv_path]:
+            upload_file_to_sharepoint(path, "missing_products")
+        print(f"☁️ Uploaded missing reports for {store_name} to SharePoint.")
 
     else:
         print("✅ No missing SKUs — all products updated successfully.")
