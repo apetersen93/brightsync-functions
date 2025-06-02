@@ -8,7 +8,7 @@ import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
-from global_config.sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint
+from global_config.sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint, get_graph_token
 
 # 📦 Load per-store config
 def load_config(store_key):
@@ -34,6 +34,34 @@ def load_conflict_flags_from_sharepoint():
     except Exception as e:
         print(f"⚠️ Failed to load conflict_flags.json from SharePoint: {e}")
         return {}
+
+def delete_old_conflict_reports(store_name):
+    try:
+        access_token = get_graph_token()
+        site_id = os.environ["GRAPH_SITE_ID"]
+        drive_id = os.environ["GRAPH_DRIVE_ID"]
+
+        list_url = (
+            f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}"
+            f"/root:/Webstore Assets/BrightSync/conflict_reports:/children"
+        )
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+        r = requests.get(list_url, headers=headers)
+        r.raise_for_status()
+        files = r.json().get("value", [])
+
+        for f in files:
+            name = f.get("name", "")
+            if name.startswith(f"{store_name.lower()}_conflict_report_"):
+                del_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}/items/{f['id']}"
+                del_r = requests.delete(del_url, headers=headers)
+                del_r.raise_for_status()
+                print(f"🗑️ Deleted old conflict report: {name}")
+
+    except Exception as e:
+        print(f"⚠️ Could not delete old conflict reports: {e}")
 
 # 🧠 Inclusion logic
 def should_include_product(cfg, sku, vendors):
@@ -63,7 +91,6 @@ def scan_conflicts(cfg):
     date_stamp = datetime.now().strftime("%Y%m%d")
     out_path = os.path.join(tmp_dir, f"{store_name}_conflict_report_{date_stamp}.csv")
 
-    # 🌐 Pull products
     all_prods, page = [], 1
     while True:
         url = f"{base_url}/api/v2.6.1/products?token={token}&per_page=500&page={page}"
@@ -75,7 +102,6 @@ def scan_conflicts(cfg):
         all_prods.extend(data)
         page += 1
 
-    # 🔎 Conflict logic
     conflict_rows = []
     conflict_skus = set()
     conflict_pids = set()
@@ -109,7 +135,6 @@ def scan_conflicts(cfg):
                 conflict_skus.add(sku)
                 conflict_pids.add(str(e["id"]))
 
-    # 🧠 Deep checks
     vendor_map = load_vendor_tag_map()
     prefix_map = cfg.get("prefix_to_tag", {})
     for prod in all_prods:
@@ -158,7 +183,6 @@ def scan_conflicts(cfg):
             conflict_skus.add(sku)
             conflict_pids.add(pid)
 
-    # 📄 Write CSV
     if conflict_rows:
         with open(out_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -176,6 +200,7 @@ def scan_conflicts(cfg):
         print("📤 Uploaded conflict report to SharePoint")
     else:
         print(f"✅ [{store_name}] No conflicts found.")
+        delete_old_conflict_reports(store_name)
 
     if conflict_skus or conflict_pids:
         all_flags[store_name.upper()] = {
