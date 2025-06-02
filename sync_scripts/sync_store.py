@@ -17,11 +17,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "g
 from sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint
 
 def load_config(store_key):
-    path = os.path.join("store_configs", f"{store_key}_config.json")
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"❌ Config file not found: {path}")
-    with open(path, "r") as f:
-        return json.load(f)
+    try:
+        file_bytes = download_file_from_sharepoint(
+            "Webstore Assets/BrightSync/store_configs", 
+            f"{store_key}_config.json"
+        )
+        return json.loads(file_bytes)
+    except Exception as e:
+        raise FileNotFoundError(f"❌ Failed to load config from SharePoint: {e}")
 
 def load_cache(cfg):
     try:
