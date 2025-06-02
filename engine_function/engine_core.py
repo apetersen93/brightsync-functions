@@ -17,6 +17,7 @@ from sharepoint_utils import upload_file_to_sharepoint, download_file_from_share
 def engine_main(sync_file_path):
     store_name = os.path.basename(sync_file_path).split("_")[0]
     print(f"📦 Loading product data from: {sync_file_path}")
+    print(f"📂 File exists: {os.path.exists(sync_file_path)}")
 
     with open(sync_file_path, "r") as f:
         products = json.load(f)
@@ -63,7 +64,15 @@ def engine_main(sync_file_path):
             product.pop(field, None)
 
         put_url = f"{base_url}/products/{productId}"
+
+        print(f"📤 PUT to {put_url}")
+        print("📦 Payload:")
+        print(json.dumps(product, indent=2))
+
         r = requests.put(put_url, auth=auth, headers=headers, json=product)
+
+        print(f"🛬 Response code: {r.status_code}")
+        print(f"📝 Response: {r.text}")
 
         if r.status_code == 200:
             print(f"✅ Updated {sku}")
