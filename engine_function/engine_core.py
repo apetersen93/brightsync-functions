@@ -6,6 +6,7 @@ import csv
 import requests
 import subprocess
 
+# ⬇️ Azure-compatible setup
 subprocess.run([sys.executable, "-m", "pip", "install", "--target", "/tmp/pip_modules", "python-dateutil"], check=True)
 sys.path.insert(0, "/tmp/pip_modules")
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
@@ -44,16 +45,22 @@ def engine_main(sync_file_path):
         product = results[0]
         productId = product["productId"]
 
+        # Smart tag merge
         existing_tag_ids = set(tag["tagId"] for tag in product.get("tags") or [])
         desired_tag_ids = set(tag["tagId"] for tag in entry.get("tags") or [])
         tag_sources = entry.get("_tag_sources", {}) or {}
         tracked_tag_ids = set(int(tid) for tid in tag_sources.keys())
         final_tag_ids = desired_tag_ids.union(existing_tag_ids - tracked_tag_ids)
-
         product["tags"] = [{"tagId": tid} for tid in sorted(final_tag_ids)]
+
+        # Update editable fields
         product["imageUrl"] = entry.get("imageUrl", product.get("imageUrl"))
         product["thumbnailUrl"] = entry.get("imageUrl", product.get("thumbnailUrl"))
         product["name"] = entry.get("name", product.get("name"))
+
+        # Remove known problematic fields
+        for field in ["productType", "defaultCarrierCode", "defaultWarehouseId", "defaultPackageId", "customsDeclaration"]:
+            product.pop(field, None)
 
         put_url = f"{base_url}/products/{productId}"
         r = requests.put(put_url, auth=auth, headers=headers, json=product)
@@ -63,9 +70,14 @@ def engine_main(sync_file_path):
         else:
             print(f"❌ Failed to update {sku}: {r.status_code} | {r.text}")
 
-    for item in products:
-        update_product(item)
-    print(f"🔁 Processed {len(products)} SKUs from sync file.")
+    try:
+        for item in products:
+            update_product(item)
+        print(f"🔁 Processed {len(products)} SKUs from sync file.")
+    finally:
+        if os.path.exists(sync_file_path):
+            os.remove(sync_file_path)
+            print(f"🧼 Cleaned up sync file: {sync_file_path}")
 
     if missing:
         print(f"⚠️ {len(missing)} products missing — writing to CSV + JSON...")
@@ -86,17 +98,10 @@ def engine_main(sync_file_path):
         with open(json_path, "w") as f:
             json.dump(missing, f, indent=2)
 
-        # ⬆️ Upload both to SharePoint
         for path in [json_path, csv_path]:
             upload_file_to_sharepoint(path, "missing_products")
         print(f"☁️ Uploaded missing reports for {store_name} to SharePoint.")
-
     else:
         print("✅ No missing SKUs — all products updated successfully.")
-
-    # 🧼 Cleanup sync file
-    if os.path.exists(sync_file_path):
-        os.remove(sync_file_path)
-        print(f"🧼 Cleaned up sync file: {sync_file_path}")
 
     return f"✅ Finished engine run for {store_name}"
