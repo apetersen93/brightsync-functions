@@ -8,6 +8,7 @@ import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
+from global_config.sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint
 
 # 📦 Load per-store config
 def load_config(store_key):
@@ -26,6 +27,14 @@ def load_vendor_tag_map():
     with open(path, "r") as f:
         return json.load(f)
 
+def load_conflict_flags_from_sharepoint():
+    try:
+        file_bytes = download_file_from_sharepoint("Webstore Assets/BrightSync/cache", "conflict_flags.json")
+        return json.loads(file_bytes)
+    except Exception as e:
+        print(f"⚠️ Failed to load conflict_flags.json from SharePoint: {e}")
+        return {}
+
 # 🧠 Inclusion logic
 def should_include_product(cfg, sku, vendors):
     mode = cfg.get("filter_mode", "sku")
@@ -42,8 +51,7 @@ def should_include_product(cfg, sku, vendors):
 
 # 🔍 Main conflict scan
 def scan_conflicts(cfg):
-    from global_config.sharepoint_utils import upload_file_to_sharepoint
-
+    all_flags = load_conflict_flags_from_sharepoint()
     store_name = cfg["store_name"]
     base_url = cfg["brightstores_url"]
     token = cfg["brightstores_token"]
@@ -51,16 +59,9 @@ def scan_conflicts(cfg):
     tmp_dir = "/tmp"
     os.makedirs(tmp_dir, exist_ok=True)
 
-    cache_path = os.path.join(tmp_dir, f"{store_name}_bs_cache.json")
     conflict_flags_path = os.path.join(tmp_dir, "conflict_flags.json")
     date_stamp = datetime.now().strftime("%Y%m%d")
     out_path = os.path.join(tmp_dir, f"{store_name}_conflict_report_{date_stamp}.csv")
-
-    try:
-        with open(cache_path, "r") as f:
-            bs_cache = json.load(f)
-    except FileNotFoundError:
-        bs_cache = {}
 
     # 🌐 Pull products
     all_prods, page = [], 1
@@ -123,8 +124,6 @@ def scan_conflicts(cfg):
             continue
         if not is_active and (not updated_dt or updated_dt.replace(tzinfo=None) < date_threshold):
             continue
-        if str(prod["id"]) in bs_cache and bs_cache[str(prod["id"])]["updated_at"] == updated_at:
-            continue
 
         detail_url = f"{base_url}/api/v2.6.1/products/{pid}?token={token}"
         try:
@@ -134,12 +133,6 @@ def scan_conflicts(cfg):
         except Exception as e:
             print(f"🚫 Failed to fetch product {pid}: {e}")
             continue
-
-        bs_cache[pid] = {
-            "id": prod["id"],
-            "sku": sku,
-            "updated_at": prod.get("updated_at")
-        }
 
         def log_missing_subsku(subs, label):
             for s in subs:
@@ -173,7 +166,6 @@ def scan_conflicts(cfg):
             writer.writerows(conflict_rows)
         print(f"📄 Conflict report saved: {out_path}")
 
-        # Upload CSV
         with open(out_path, "rb") as f:
             file_bytes = f.read()
         upload_file_to_sharepoint(
@@ -184,17 +176,6 @@ def scan_conflicts(cfg):
         print("📤 Uploaded conflict report to SharePoint")
     else:
         print(f"✅ [{store_name}] No conflicts found.")
-
-    # ✅ Save and upload conflict_flags.json
-    all_flags = {}
-    if os.path.exists(conflict_flags_path):
-        try:
-            with open(conflict_flags_path, "r") as f:
-                content = f.read().strip()
-                if content:
-                    all_flags = json.loads(content)
-        except json.JSONDecodeError:
-            print(f"⚠️ Skipping corrupted conflict_flags.json")
 
     if conflict_skus or conflict_pids:
         all_flags[store_name.upper()] = {
