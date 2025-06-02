@@ -10,13 +10,11 @@ from datetime import datetime, timedelta
 subprocess.run([sys.executable, "-m", "pip", "install", "--target", "/tmp/pip_modules", "python-dateutil"], check=True)
 sys.path.insert(0, "/tmp/pip_modules")
 
-# ⬇️ Now safe to import
 from dateutil.parser import parse as parse_date
 print("✅ Patched import: dateutil loaded from /tmp")
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
-from sharepoint_utils import upload_file_to_sharepoint
-
+from sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint
 
 def load_config(store_key):
     path = os.path.join("store_configs", f"{store_key}_config.json")
@@ -24,6 +22,38 @@ def load_config(store_key):
         raise FileNotFoundError(f"❌ Config file not found: {path}")
     with open(path, "r") as f:
         return json.load(f)
+
+def load_cache(cfg):
+    try:
+        file_bytes = download_file_from_sharepoint("Webstore Assets/BrightSync/cache", f"{cfg['store_name']}_bs_cache.json")
+        return json.loads(file_bytes)
+    except Exception as e:
+        print(f"⚠️ No cache found or failed to load — starting fresh: {e}")
+        return {}
+
+def save_cache(cfg, cache):
+    tmp_path = os.path.join("/tmp", f"{cfg['store_name']}_bs_cache.json")
+    with open(tmp_path, "w") as f:
+        json.dump(cache, f, indent=2)
+    with open(tmp_path, "rb") as f:
+        file_bytes = f.read()
+    upload_file_to_sharepoint(
+        filename=f"{cfg['store_name']}_bs_cache.json",
+        file_bytes=file_bytes,
+        target_path=f"Webstore Assets/BrightSync/cache/{cfg['store_name']}_bs_cache.json"
+    )
+    print("📤 Uploaded updated cache to SharePoint")
+
+def load_conflict_flags(store_name):
+    try:
+        file_bytes = download_file_from_sharepoint("Webstore Assets/BrightSync/cache", "conflict_flags.json")
+        flags = json.loads(file_bytes)
+        entry = flags.get(store_name.upper())
+        if entry:
+            return set(entry.get("skus", [])), set(entry.get("pids", []))
+    except Exception as e:
+        print(f"⚠️ Could not load conflict flags — continuing without filter: {e}")
+    return set(), set()
 
 def fix_image_url(url, base):
     if not url:
@@ -122,44 +152,6 @@ def try_match_sub_option_image(cfg, product, final_sku, parent_sku, pid):
             if sub.get("sub_sku") in variant_parts and sub.get("image_src"):
                 return fix_image_url(sub["image_src"], cfg["brightstores_url"])
     return None
-
-def load_cache(cfg):
-    path = os.path.join(cfg["base_dir"], "cache", f"{cfg['store_name']}_bs_cache.json")
-    if os.path.exists(path):
-        with open(path, "r") as f:
-            return json.load(f)
-    return {}
-
-def save_cache(cfg, cache):
-    tmp_path = os.path.join("/tmp", f"{cfg['store_name']}_bs_cache.json")
-    with open(tmp_path, "w") as f:
-        json.dump(cache, f, indent=2)
-
-    with open(tmp_path, "rb") as f:
-        file_bytes = f.read()
-
-    upload_file_to_sharepoint(
-        filename=f"{cfg['store_name']}_bs_cache.json",
-        file_bytes=file_bytes,
-        target_path=f"Webstore Assets/BrightSync/cache/{cfg['store_name']}_bs_cache.json"
-    )
-    print("📤 Uploaded updated cache to SharePoint")
-
-
-        
-def load_conflict_flags(store_name):
-    path = os.path.join("cache", "conflict_flags.json")
-    if os.path.exists(path):
-        try:
-            with open(path, "r") as f:
-                flags = json.load(f)
-                entry = flags.get(store_name.upper())
-                if entry:
-                    return set(entry.get("skus", [])), set(entry.get("pids", []))
-        except:
-            print(f"⚠️ Could not load conflict flags — continuing without filter")
-    return set(), set()
-
 
 def load_vendor_tag_map():
     path = os.path.join(os.path.dirname(__file__), "..", "global_config", "vendor_tag_map.json")
