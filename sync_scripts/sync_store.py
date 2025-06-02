@@ -5,7 +5,6 @@ import os
 import json
 import requests
 from datetime import datetime, timedelta
-from global_config.sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint, get_graph_token
 
 
 # ⬇️ Force install to /tmp
@@ -16,6 +15,7 @@ from dateutil.parser import parse as parse_date
 print("✅ Patched import: dateutil loaded from /tmp")
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
+from sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint, get_graph_token
 
 def load_config(store_key):
     try:
