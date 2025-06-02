@@ -26,3 +26,22 @@ def upload_file_to_sharepoint(filename, file_bytes, target_path):
     }
     r = requests.put(url, headers=headers, data=file_bytes)
     r.raise_for_status()
+
+def download_file_from_sharepoint(folder_path, filename):
+    access_token = get_graph_token()
+    site_id = os.environ["GRAPH_SITE_ID"]
+    drive_id = os.environ["GRAPH_DRIVE_ID"]
+
+    url = (
+        f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}"
+        f"/root:/{folder_path}/{filename}:/content"
+    )
+
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    r = requests.get(url, headers=headers)
+    r.raise_for_status()
+    return r.content
+
