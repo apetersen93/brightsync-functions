@@ -1,4 +1,3 @@
-# engine_core.py
 import os
 import sys
 import json
@@ -12,7 +11,12 @@ sys.path.insert(0, "/tmp/pip_modules")
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
 
 from dateutil.parser import parse as parse_date
-from sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint, get_graph_token
+from sharepoint_utils import (
+    upload_file_to_sharepoint,
+    download_file_from_sharepoint,
+    get_graph_token,
+    delete_file_from_sharepoint,
+)
 
 def engine_main(sync_file_path):
     store_name = os.path.basename(sync_file_path).split("_")[0]
@@ -68,17 +72,21 @@ def engine_main(sync_file_path):
         product["thumbnailUrl"] = entry.get("imageUrl", product.get("thumbnailUrl"))
         product["name"] = entry.get("name", product.get("name"))
 
-        for field in ["productType", "defaultCarrierCode", "defaultWarehouseId", "defaultPackageId", "customsDeclaration"]:
+        for field in [
+            "productType",
+            "defaultCarrierCode",
+            "defaultWarehouseId",
+            "defaultPackageId",
+            "customsDeclaration",
+        ]:
             product.pop(field, None)
 
         put_url = f"{base_url}/products/{productId}"
-
         print(f"📤 PUT to {put_url}")
         print("📦 Payload:")
         print(json.dumps(product, indent=2))
 
         r = requests.put(put_url, auth=auth, headers=headers, json=product)
-
         print(f"🛬 Response code: {r.status_code}")
         print(f"📝 Response: {r.text}")
 
@@ -96,6 +104,11 @@ def engine_main(sync_file_path):
         if os.path.exists(sync_file_path):
             os.remove(sync_file_path)
             print(f"🧼 Cleaned up sync file: {sync_file_path}")
+        try:
+            delete_file_from_sharepoint("sync_ready", f"{store_name}_sync_ready.json")
+            print(f"🗑️ Removed sync file from SharePoint: {store_name}_sync_ready.json")
+        except Exception as e:
+            print(f"⚠️ Failed to delete sync file from SharePoint: {e}")
 
     if missing:
         print(f"⚠️ {len(missing)} products missing — writing to CSV + JSON...")
@@ -121,6 +134,7 @@ def engine_main(sync_file_path):
         print(f"☁️ Uploaded missing reports for {store_name} to SharePoint.")
     else:
         print("✅ No missing SKUs — all products updated successfully.")
+        print("📭 No missing product report uploaded.")
 
     print(f"✅ Final summary: {len(updated)} updated, {len(missing)} missing.")
     return f"✅ Finished engine run for {store_name}"
