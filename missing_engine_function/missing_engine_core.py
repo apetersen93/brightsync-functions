@@ -143,6 +143,8 @@ def rerun_all_missing():
     else:
         delete_file_from_sharepoint("missing_products", "missing_products_all.csv")
         print("🧽 Cleaned up missing_products_all.csv")
+        if os.path.exists(combined_csv):
+            os.remove(combined_csv)
 
     if os.path.exists(log_path) and not errors_logged:
         os.remove(log_path)
