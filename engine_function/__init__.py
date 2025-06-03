@@ -20,7 +20,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
             try:
                 logging.info(f"📥 Attempting SharePoint download: {filename}")
-                download_file_from_sharepoint("sync_ready", filename, full_path)
+                file_bytes = download_file_from_sharepoint("sync_ready", filename)
+                with open(full_path, "wb") as f:
+                    f.write(file_bytes)
                 logging.info(f"✅ Downloaded to: {full_path}")
             except Exception as e:
                 logging.error(f"❌ SharePoint download failed: {e}")
