@@ -18,8 +18,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             filename = f"{store}_sync_ready.json"
             full_path = f"/tmp/{filename}"
 
-            logging.info(f"📥 Downloading {filename} to {full_path}")
-            download_file_from_sharepoint("sync_ready", filename, full_path)
+            try:
+                logging.info(f"📥 Attempting SharePoint download: {filename}")
+                download_file_from_sharepoint("sync_ready", filename, full_path)
+                logging.info(f"✅ Downloaded to: {full_path}")
+            except Exception as e:
+                logging.error(f"❌ SharePoint download failed: {e}")
+                return func.HttpResponse(f"❌ Failed to download sync file: {e}", status_code=500)
 
             result = subprocess.run(
                 ["python", "engine_function/engine_core.py", full_path],
