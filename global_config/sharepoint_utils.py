@@ -65,5 +65,20 @@ def delete_file_from_sharepoint(folder: str, filename: str):
     else:
         raise Exception(f"❌ Failed to delete file: {r.status_code} | {r.text}")
 
+def list_sharepoint_folder(folder: str):
+    token = get_graph_token()
+    site_id = os.environ["GRAPH_SITE_ID"]
+    drive_id = os.environ["GRAPH_DRIVE_ID"]
+
+    url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}/root:/{folder}:/children"
+    headers = {"Authorization": f"Bearer {token}"}
+
+    r = requests.get(url, headers=headers)
+    r.raise_for_status()
+    items = r.json().get("value", [])
+    for item in items:
+        print(f"📁 Found in {folder}: {item['name']}")
+
+
 
 
