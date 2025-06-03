@@ -45,3 +45,20 @@ def download_file_from_sharepoint(folder_path, filename):
     r.raise_for_status()
     return r.content
 
+def delete_file_from_sharepoint(folder: str, filename: str):
+    token = get_graph_token()
+    url = f"{SHAREPOINT_API_BASE}/root:/{folder}/{filename}"
+
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+
+    r = requests.delete(url, headers=headers)
+    if r.status_code == 204:
+        print(f"🗑️ Deleted file: {filename}")
+    elif r.status_code == 404:
+        print(f"⚠️ File not found for deletion: {filename}")
+    else:
+        raise Exception(f"❌ Failed to delete file: {r.status_code} | {r.text}")
+
+
