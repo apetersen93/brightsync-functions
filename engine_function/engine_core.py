@@ -124,3 +124,9 @@ def engine_main(sync_file_path):
 
     print(f"✅ Final summary: {len(updated)} updated, {len(missing)} missing.")
     return f"✅ Finished engine run for {store_name}"
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("❗ Expected sync file path as first argument")
+    else:
+        engine_main(sys.argv[1])
