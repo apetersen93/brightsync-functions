@@ -190,12 +190,10 @@ def scan_conflicts(cfg):
             writer.writerows(conflict_rows)
         print(f"📄 Conflict report saved: {out_path}")
 
-        with open(out_path, "rb") as f:
-            file_bytes = f.read()
         upload_file_to_sharepoint(
-            filename=os.path.basename(out_path),
-            file_bytes=file_bytes,
-            target_path=f"Webstore Assets/BrightSync/conflict_reports/{store_name}_conflict_report_{date_stamp}.csv"
+            out_path,
+            "Webstore Assets/BrightSync/conflict_reports",
+            os.path.basename(out_path)
         )
         print("📤 Uploaded conflict report to SharePoint")
     else:
@@ -214,12 +212,10 @@ def scan_conflicts(cfg):
     with open(conflict_flags_path, "w") as f:
         json.dump(all_flags, f, indent=2)
 
-    with open(conflict_flags_path, "rb") as f:
-        flags_bytes = f.read()
     upload_file_to_sharepoint(
-        filename="conflict_flags.json",
-        file_bytes=flags_bytes,
-        target_path="Webstore Assets/BrightSync/cache/conflict_flags.json"
+        conflict_flags_path,
+        "Webstore Assets/BrightSync/cache",
+        "conflict_flags.json"
     )
     print("📤 Uploaded conflict_flags.json to SharePoint")
 
