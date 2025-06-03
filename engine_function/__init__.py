@@ -20,7 +20,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
             try:
                 logging.info(f"📥 Attempting SharePoint download: {filename}")
-                file_bytes = download_file_from_sharepoint("sync_ready", filename)
+                file_bytes = download_file_from_sharepoint("Webstore Assets/BrightSync/sync_ready", filename)
                 with open(full_path, "wb") as f:
                     f.write(file_bytes)
                 logging.info(f"✅ Downloaded to: {full_path}")
