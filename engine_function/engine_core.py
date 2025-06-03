@@ -19,13 +19,18 @@ def engine_main(sync_file_path):
     print(f"📦 Loading product data from: {sync_file_path}")
     print(f"📂 File exists: {os.path.exists(sync_file_path)}")
 
-    with open(sync_file_path, "r") as f:
-        products = json.load(f)
+    try:
+        with open(sync_file_path, "r") as f:
+            raw = f.read()
+            print(f"📝 Raw sync file (first 1000 chars):\n{raw[:1000]}")
+            products = json.loads(raw)
+    except Exception as e:
+        print(f"❌ Failed to load sync file: {e}")
+        return f"❌ Failed to load sync file for {store_name}"
 
     print(f"🧾 Loaded {len(products)} products from {sync_file_path}")
     if len(products) > 0:
         print(f"🔍 First SKU in file: {products[0].get('sku', 'N/A')}")
-
 
     api_key = "2e138fed62f049f9b8d6b06b5e5be960"
     api_secret = "f50c4b0d4dbf428c9f189537e2fb3737"
@@ -34,10 +39,11 @@ def engine_main(sync_file_path):
     base_url = "https://ssapi.shipstation.com"
 
     missing = []
+    updated = []
 
     def update_product(entry):
         sku = entry["sku"]
-        print(f"🔧 Entering update_product for: {entry.get('sku', 'unknown')}")
+        print(f"🔧 Entering update_product for: {sku}")
 
         list_url = f"{base_url}/products?sku={sku}"
         r = requests.get(list_url, auth=auth)
@@ -51,7 +57,6 @@ def engine_main(sync_file_path):
         product = results[0]
         productId = product["productId"]
 
-        # Smart tag merge
         existing_tag_ids = set(tag["tagId"] for tag in product.get("tags") or [])
         desired_tag_ids = set(tag["tagId"] for tag in entry.get("tags") or [])
         tag_sources = entry.get("_tag_sources", {}) or {}
@@ -59,12 +64,10 @@ def engine_main(sync_file_path):
         final_tag_ids = desired_tag_ids.union(existing_tag_ids - tracked_tag_ids)
         product["tags"] = [{"tagId": tid} for tid in sorted(final_tag_ids)]
 
-        # Update editable fields
         product["imageUrl"] = entry.get("imageUrl", product.get("imageUrl"))
         product["thumbnailUrl"] = entry.get("imageUrl", product.get("thumbnailUrl"))
         product["name"] = entry.get("name", product.get("name"))
 
-        # Remove known problematic fields
         for field in ["productType", "defaultCarrierCode", "defaultWarehouseId", "defaultPackageId", "customsDeclaration"]:
             product.pop(field, None)
 
@@ -81,6 +84,7 @@ def engine_main(sync_file_path):
 
         if r.status_code == 200:
             print(f"✅ Updated {sku}")
+            updated.append(sku)
         else:
             print(f"❌ Failed to update {sku}: {r.status_code} | {r.text}")
 
@@ -118,4 +122,5 @@ def engine_main(sync_file_path):
     else:
         print("✅ No missing SKUs — all products updated successfully.")
 
+    print(f"✅ Final summary: {len(updated)} updated, {len(missing)} missing.")
     return f"✅ Finished engine run for {store_name}"
