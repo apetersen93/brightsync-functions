@@ -47,7 +47,11 @@ def download_file_from_sharepoint(folder_path, filename):
 
 def delete_file_from_sharepoint(folder: str, filename: str):
     token = get_graph_token()
-    url = f"{SHAREPOINT_API_BASE}/root:/{folder}/{filename}"
+
+    ssite_id = os.environ["GRAPH_SITE_ID"]
+    drive_id = os.environ["GRAPH_DRIVE_ID"]
+
+    url = f"https://graph.microsoft.com/v1.0/drives/{drive_id}/root:/{folder}/{filename}"
 
     headers = {
         "Authorization": f"Bearer {token}"
@@ -60,5 +64,6 @@ def delete_file_from_sharepoint(folder: str, filename: str):
         print(f"⚠️ File not found for deletion: {filename}")
     else:
         raise Exception(f"❌ Failed to delete file: {r.status_code} | {r.text}")
+
 
 
