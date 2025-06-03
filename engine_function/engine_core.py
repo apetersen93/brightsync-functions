@@ -123,7 +123,7 @@ def engine_main(sync_file_path):
         tmp_dir = "/tmp"
         json_path = os.path.join(tmp_dir, f"missing_products_{store_name}.json")
         csv_path = os.path.join(tmp_dir, f"missing_products_{store_name}.csv")
-
+    
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(["SKU", "Name", "Image URL", "Order Tags"])
@@ -136,13 +136,19 @@ def engine_main(sync_file_path):
                 ])
         with open(json_path, "w") as f:
             json.dump(missing, f, indent=2)
-
-        upload_file_to_sharepoint(json_path, "missing_products", os.path.basename(json_path))
-        upload_file_to_sharepoint(csv_path, "missing_products", os.path.basename(csv_path))
-        
+    
+        try:
+            upload_file_to_sharepoint(json_path, "missing_products", os.path.basename(json_path))
+            upload_file_to_sharepoint(csv_path, "missing_products", os.path.basename(csv_path))
+            print(f"☁️ Uploaded missing reports for {store_name} to SharePoint.")
+        except Exception as e:
+            print(f"❌ Failed to upload missing product files: {e}")
+            print(f"🛠️ Check SharePoint path or connectivity issues.")
+    
     else:
         print("✅ No missing SKUs — all products updated successfully.")
         print("📭 No missing product report uploaded.")
+
 
     print(f"✅ Final summary: {len(updated)} updated, {len(missing)} missing.")
     return f"✅ Finished engine run for {store_name}"
