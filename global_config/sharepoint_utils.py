@@ -48,7 +48,7 @@ def download_file_from_sharepoint(folder_path, filename):
 def delete_file_from_sharepoint(folder: str, filename: str):
     token = get_graph_token()
 
-    ssite_id = os.environ["GRAPH_SITE_ID"]
+    site_id = os.environ["GRAPH_SITE_ID"]
     drive_id = os.environ["GRAPH_DRIVE_ID"]
 
     url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}/root:/{folder}/{filename}:/"
