@@ -32,7 +32,7 @@ def rerun_all_missing():
 
     # 📥 Pull list of files from SharePoint
     print("📥 Listing 'missing_products' files...")
-    filenames = list_sharepoint_folder("missing_products")
+    filenames = list_sharepoint_folder("Webstore Assets/BrightSync/missing_products")
     json_files = [f for f in filenames if f.startswith("missing_products_") and f.endswith(".json")]
 
     if not json_files:
