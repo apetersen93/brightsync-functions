@@ -6,7 +6,7 @@ import requests
 import subprocess
 
 # ⬇️ Azure-compatible setup
-subprocess.run([sys.executable, "-m", "pip", "install", "--target", "/tmp/pip_modules", "python-dateutil"], check=True)
+subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "--target", "/tmp/pip_modules", "python-dateutil"], check=True)
 sys.path.insert(0, "/tmp/pip_modules")
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
 
@@ -137,9 +137,9 @@ def engine_main(sync_file_path):
         with open(json_path, "w") as f:
             json.dump(missing, f, indent=2)
 
-        for path in [json_path, csv_path]:
-            upload_file_to_sharepoint(path, "missing_products")
-        print(f"☁️ Uploaded missing reports for {store_name} to SharePoint.")
+        upload_file_to_sharepoint(json_path, "missing_products", os.path.basename(json_path))
+        upload_file_to_sharepoint(csv_path, "missing_products", os.path.basename(csv_path))
+        
     else:
         print("✅ No missing SKUs — all products updated successfully.")
         print("📭 No missing product report uploaded.")
