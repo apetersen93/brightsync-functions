@@ -76,8 +76,16 @@ def list_sharepoint_folder(folder: str):
     r = requests.get(url, headers=headers)
     r.raise_for_status()
     items = r.json().get("value", [])
+    filenames = []
+    
     for item in items:
-        print(f"📁 Found in {folder}: {item['name']}")
+        name = item.get("name")
+        if name:
+            print(f"📁 Found in {folder}: {name}")
+            filenames.append(name)
+    
+    return filenames
+
 
 
 
