@@ -22,6 +22,11 @@ def engine_main(sync_file_path):
     with open(sync_file_path, "r") as f:
         products = json.load(f)
 
+    print(f"🧾 Loaded {len(products)} products from {sync_file_path}")
+    if len(products) > 0:
+        print(f"🔍 First SKU in file: {products[0].get('sku', 'N/A')}")
+
+
     api_key = "2e138fed62f049f9b8d6b06b5e5be960"
     api_secret = "f50c4b0d4dbf428c9f189537e2fb3737"
     auth = (api_key, api_secret)
@@ -32,7 +37,7 @@ def engine_main(sync_file_path):
 
     def update_product(entry):
         sku = entry["sku"]
-        print(f"🛠️ Updating SKU: {sku}")
+        print(f"🔧 Entering update_product for: {entry.get('sku', 'unknown')}")
 
         list_url = f"{base_url}/products?sku={sku}"
         r = requests.get(list_url, auth=auth)
