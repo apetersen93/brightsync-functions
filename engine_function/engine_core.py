@@ -106,15 +106,17 @@ def engine_main(sync_file_path):
             os.remove(sync_file_path)
             print(f"🧼 Cleaned up sync file: {sync_file_path}")
 
-         # 🧪 DEBUG: List files in SharePoint to confirm filename
-        print("🔎 Listing files in 'sync_ready' folder:")
-        list_sharepoint_folder("sync_ready")
+        sharepoint_folder = "Webstore Assets/BrightSync/sync_ready"
+        
+        print(f"🔎 Listing files in '{sharepoint_folder}':")
+        list_sharepoint_folder(sharepoint_folder)
         
         try:
-            delete_file_from_sharepoint("sync_ready", f"{store_name}_sync_ready.json")
+            delete_file_from_sharepoint(sharepoint_folder, f"{store_name}_sync_ready.json")
             print(f"🗑️ Removed sync file from SharePoint: {store_name}_sync_ready.json")
         except Exception as e:
             print(f"⚠️ Failed to delete sync file from SharePoint: {e}")
+
 
     if missing:
         print(f"⚠️ {len(missing)} products missing — writing to CSV + JSON...")
