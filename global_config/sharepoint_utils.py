@@ -14,18 +14,26 @@ def get_graph_token():
     r.raise_for_status()
     return r.json()["access_token"]
 
-def upload_file_to_sharepoint(filename, file_bytes, target_path):
-    access_token = get_graph_token()  # your auth code
+def upload_file_to_sharepoint(local_path, folder_path, target_name):
+    access_token = get_graph_token()
     site_id = os.environ["GRAPH_SITE_ID"]
     drive_id = os.environ["GRAPH_DRIVE_ID"]
+
+    # Normalize folder path to avoid double slashes
+    if folder_path.endswith("/"):
+        folder_path = folder_path.rstrip("/")
+    target_path = f"{folder_path}/{target_name}"
 
     url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}/root:/{target_path}:/content"
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/octet-stream"
     }
-    r = requests.put(url, headers=headers, data=file_bytes)
-    r.raise_for_status()
+
+    with open(local_path, "rb") as f:
+        r = requests.put(url, headers=headers, data=f.read())
+        r.raise_for_status()
+
 
 def download_file_from_sharepoint(folder_path, filename):
     access_token = get_graph_token()
