@@ -16,6 +16,7 @@ from sharepoint_utils import (
     download_file_from_sharepoint,
     get_graph_token,
     delete_file_from_sharepoint,
+    list_sharepoint_folder
 )
 
 def engine_main(sync_file_path):
