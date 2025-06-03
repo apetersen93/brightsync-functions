@@ -1,18 +1,22 @@
 import logging
-import azure.functions as func
 import subprocess
+import azure.functions as func
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info("🚀 Rerun Missing Function triggered.")
+    logging.info("🚀 Missing engine function triggered.")
+
     try:
         result = subprocess.run(
-            ["python", "engine_function/rerun_missing_all.py"],
+            ["python", "missing_engine_function/missing_engine_core.py"],
             check=True,
             capture_output=True,
             text=True
         )
-        logging.info(result.stdout)
-        return func.HttpResponse(f"✅ Missing rerun complete:\n{result.stdout}", status_code=200)
+
+        logging.info("📤 STDOUT:\n" + result.stdout)
+        logging.info("📥 STDERR:\n" + result.stderr)
+        return func.HttpResponse(f"✅ Missing engine run complete:\n{result.stdout}", status_code=200)
+
     except subprocess.CalledProcessError as e:
-        logging.error(e.stderr)
-        return func.HttpResponse(f"❌ Missing rerun failed:\n{e.stderr}", status_code=500)
+        logging.error("❌ Subprocess failed:\n" + e.stderr)
+        return func.HttpResponse(f"❌ Missing engine run failed:\n{e.stderr}", status_code=500)
