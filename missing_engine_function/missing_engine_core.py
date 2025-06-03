@@ -24,15 +24,17 @@ auth = (api_key, api_secret)
 headers = {"Content-Type": "application/json"}
 base_url = "https://ssapi.shipstation.com"
 
+MISSING_FOLDER = "Webstore Assets/BrightSync/missing_products"
+
 def rerun_all_missing():
     tmp_dir = "/tmp/missing_products"
     os.makedirs(tmp_dir, exist_ok=True)
     log_path = os.path.join(tmp_dir, "error_log.csv")
     errors_logged = False
 
-    # 📥 Pull list of files from SharePoint
-    print("📥 Listing 'missing_products' files...")
-    filenames = list_sharepoint_folder("Webstore Assets/BrightSync/missing_products")
+    # 📅 Pull list of files from SharePoint
+    print("📅 Listing 'missing_products' files...")
+    filenames = list_sharepoint_folder(MISSING_FOLDER)
     json_files = [f for f in filenames if f.startswith("missing_products_") and f.endswith(".json")]
 
     if not json_files:
@@ -51,7 +53,7 @@ def rerun_all_missing():
 
         try:
             print(f"⬇️ Downloading {file}...")
-            content = download_file_from_sharepoint("missing_products", file)
+            content = download_file_from_sharepoint(MISSING_FOLDER, file)
             with open(local_json, "wb") as f:
                 f.write(content)
             missing = json.loads(content)
@@ -111,20 +113,20 @@ def rerun_all_missing():
                 for i in still_missing:
                     writer.writerow([i.get("sku", ""), i.get("name", ""), i.get("imageUrl", ""), "inventory"])
 
-            upload_file_to_sharepoint(local_json, "missing_products")
-            upload_file_to_sharepoint(local_csv, "missing_products")
+            upload_file_to_sharepoint(local_json, MISSING_FOLDER, os.path.basename(local_json))
+            upload_file_to_sharepoint(local_csv, MISSING_FOLDER, os.path.basename(local_csv))
             print(f"⚠️ {len(still_missing)} still missing for {store} — updated files.")
         else:
-            delete_file_from_sharepoint("missing_products", file)
-            delete_file_from_sharepoint("missing_products", f"missing_products_{store}.csv")
+            delete_file_from_sharepoint(MISSING_FOLDER, file)
+            delete_file_from_sharepoint(MISSING_FOLDER, f"missing_products_{store}.csv")
             print(f"🧹 All SKUs for {store} updated — deleted JSON and CSV.")
 
     # ✅ Rebuild combined CSV
     combined_rows = []
-    for file in list_sharepoint_folder("missing_products"):
+    for file in list_sharepoint_folder(MISSING_FOLDER):
         if file.startswith("missing_products_") and file.endswith(".csv") and file != "missing_products_all.csv":
             try:
-                content = download_file_from_sharepoint("missing_products", file)
+                content = download_file_from_sharepoint(MISSING_FOLDER, file)
                 lines = content.decode("utf-8").splitlines()
                 reader = csv.reader(lines)
                 next(reader, None)
@@ -138,11 +140,11 @@ def rerun_all_missing():
             writer = csv.writer(f)
             writer.writerow(["SKU", "Name", "Image URL", "Order Tags"])
             writer.writerows(combined_rows)
-        upload_file_to_sharepoint(combined_csv, "missing_products")
+        upload_file_to_sharepoint(combined_csv, MISSING_FOLDER, os.path.basename(combined_csv))
         print(f"📄 Rebuilt missing_products_all.csv with {len(combined_rows)} entries.")
     else:
-        delete_file_from_sharepoint("missing_products", "missing_products_all.csv")
-        print("🧽 Cleaned up missing_products_all.csv")
+        delete_file_from_sharepoint(MISSING_FOLDER, "missing_products_all.csv")
+        print("🛁 Cleaned up missing_products_all.csv")
         if os.path.exists(combined_csv):
             os.remove(combined_csv)
 
