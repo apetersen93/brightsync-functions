@@ -138,8 +138,8 @@ def engine_main(sync_file_path):
             json.dump(missing, f, indent=2)
     
         try:
-            upload_file_to_sharepoint(json_path, "missing_products", os.path.basename(json_path))
-            upload_file_to_sharepoint(csv_path, "missing_products", os.path.basename(csv_path))
+            upload_file_to_sharepoint(json_path, "Webstore Assets/BrightSync/missing_products", os.path.basename(json_path))
+            upload_file_to_sharepoint(csv_path, "Webstore Assets/BrightSync/missing_products", os.path.basename(csv_path))
             print(f"☁️ Uploaded missing reports for {store_name} to SharePoint.")
         except Exception as e:
             print(f"❌ Failed to upload missing product files: {e}")
