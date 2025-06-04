@@ -69,9 +69,9 @@ def save_cache(cfg, cache):
     with open(tmp_path, "rb") as f:
         file_bytes = f.read()
     upload_file_to_sharepoint(
-        filename=f"{cfg['store_name']}_bs_cache.json",
-        file_bytes=file_bytes,
-        target_path=f"Webstore Assets/BrightSync/cache/{cfg['store_name']}_bs_cache.json"
+        "/tmp/gra_bs_cache.json",
+        "Webstore Assets/BrightSync/cache",
+        "gra_bs_cache.json"
     )
     print("📤 Uploaded updated cache to SharePoint")
 
