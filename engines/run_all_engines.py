@@ -3,11 +3,12 @@ import subprocess
 import json
 import csv
 from datetime import datetime
+from global_config.sharepoint_utils import upload_file_to_sharepoint
 
 def run_engines_from_sync_ready():
-    ready_dir = "sync_ready"
-    missing_dir = "missing_products"
-    log_dir = "logs"
+    ready_dir = "/tmp/sync_ready"
+    missing_dir = "/tmp/missing_products"
+    log_dir = "/tmp/logs"
     os.makedirs(log_dir, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -15,7 +16,7 @@ def run_engines_from_sync_ready():
 
     with open(log_file_path, "w", encoding="utf-8") as log:
         if not os.path.exists(ready_dir):
-            msg = "❌ sync_ready directory not found. Aborting."
+            msg = "❌ /tmp/sync_ready directory not found. Aborting."
             print(msg)
             log.write(msg + "\n")
             return
@@ -71,9 +72,13 @@ def run_engines_from_sync_ready():
                 writer.writerows(combined_rows)
             print(f"🚨 Combined missing_products_all.csv created with {len(combined_rows)} rows")
             log.write(f"🚨 Combined missing_products_all.csv created with {len(combined_rows)} rows\n")
+
+            upload_file_to_sharepoint(combined_csv_path, "Webstore Assets/BrightSync/missing_products")
         else:
             print("✅ No missing products found. No combined CSV created.")
             log.write("✅ No missing products found. No combined CSV created.\n")
+
+    upload_file_to_sharepoint(log_file_path, "Webstore Assets/BrightSync/logs")
 
 if __name__ == "__main__":
     run_engines_from_sync_ready()
