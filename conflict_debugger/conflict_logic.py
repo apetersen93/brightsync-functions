@@ -110,6 +110,14 @@ def scan_conflicts(cfg):
     conflict_skus = set()
     conflict_pids = set()
     sku_map = defaultdict(list)
+    
+    # 🧠 First populate SKU map with cached products
+    for pid, cached in bs_cache.items():
+        sku = (cached.get("parent_sku") or "").strip()
+        if sku:
+            sku_map[sku].append({"id": pid, "source": "cache"})
+    
+    # 🔍 Then process new/updated products
     for p in all_prods:
         sku = (p.get("sku") or "").strip()
         vendors = p.get("vendors", [])
@@ -117,7 +125,7 @@ def scan_conflicts(cfg):
         is_active = p.get("active", True)
         updated_at = p.get("updated_at")
         updated_dt = parse_date(updated_at) if updated_at else None
-
+    
         if not should_include_product(cfg, sku, vendors):
             continue
         if not is_active and (not updated_dt or updated_dt.replace(tzinfo=None) < date_threshold):
@@ -125,7 +133,9 @@ def scan_conflicts(cfg):
         cached = bs_cache.get(pid)
         if cached and cached.get("updated_at") == updated_at:
             continue  # skip unchanged
+    
         sku_map[sku].append(p)
+
 
     # conflict checks go here...
     if conflict_rows:
