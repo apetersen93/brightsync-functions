@@ -4,8 +4,10 @@ import csv
 import os
 import json
 import sys
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta
+from dateutil.parser import parse as parse_date
 from global_config.sharepoint_utils import upload_file_to_sharepoint, download_file_from_sharepoint, get_graph_token
 
 def load_config(store_key):
@@ -47,10 +49,10 @@ def delete_old_conflict_reports(store_name):
         drive_id = os.environ["GRAPH_DRIVE_ID"]
 
         list_url = (
-            f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}" 
+            f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}"
             f"/root:/Webstore Assets/BrightSync/conflict_reports:/children"
         )
-        headers = {"Authorization": f"Bearer {access_token}"}
+        headers = { "Authorization": f"Bearer {access_token}" }
         r = requests.get(list_url, headers=headers)
         r.raise_for_status()
         files = r.json().get("value", [])
@@ -108,29 +110,31 @@ def scan_conflicts(cfg):
     conflict_pids = set()
     sku_map = defaultdict(list)
 
+    # 🔍 Then process new/updated products
     for p in all_prods:
+        updated_at = parse_date(p.get("updated_at")) if p.get("updated_at") else None
+        active = p.get("active", True)
+        if not active and (not updated_at or updated_at < date_threshold):
+            continue  # Skip inactive and stale
+
         sku = (p.get("sku") or "").strip()
         pid = p.get("id")
-        if not (sku and pid):
-            continue
-        if not should_include_product(cfg, sku, p.get("vendors", [])):
-            continue
-        sku_map[sku].append(pid)
+        if sku and pid:
+            sku_map[sku].append({"id": pid, "source": "live"})
 
-    for sku, pid_list in sku_map.items():
-        unique_pids = set(pid_list)
-        if len(unique_pids) > 1:
-            for pid in unique_pids:
+    # ✅ Run conflict checks after SKU map is built
+    for sku, entries in sku_map.items():
+        id_to_entry = {}
+        for e in entries:
+            pid = e.get("id")
+            if pid and pid not in id_to_entry:
+                id_to_entry[pid] = e
+
+        if len(id_to_entry) > 1:
+            for pid, e in id_to_entry.items():
                 conflict_rows.append(["Duplicate SKU", sku, pid, "", ""])
                 conflict_skus.add(sku)
                 conflict_pids.add(str(pid))
-
-    store_key = store_name.upper()
-    if store_key not in all_flags:
-        all_flags[store_key] = {"skus": [], "pids": []}
-
-    all_flags[store_key]["skus"] = sorted(set(all_flags[store_key].get("skus", [])) | conflict_skus)
-    all_flags[store_key]["pids"] = sorted(set(all_flags[store_key].get("pids", [])) | conflict_pids)
 
     if conflict_rows:
         with open(out_path, "w", newline="", encoding="utf-8") as f:
@@ -138,15 +142,39 @@ def scan_conflicts(cfg):
             writer.writerow(["Conflict Type", "SKU", "Product ID", "Name", "Sub Option"])
             writer.writerows(conflict_rows)
         print(f"📄 Conflict report saved: {out_path}")
-        upload_file_to_sharepoint(out_path, "Webstore Assets/BrightSync/conflict_reports", os.path.basename(out_path))
+
+        upload_file_to_sharepoint(
+            out_path,
+            "Webstore Assets/BrightSync/conflict_reports",
+            os.path.basename(out_path)
+        )
+        print("📤 Uploaded conflict report to SharePoint")
     else:
         print(f"✅ [{store_name}] No conflicts found.")
         delete_old_conflict_reports(store_name)
 
+    # 🔁 Update all_flags cache with new conflicts
+    store_key = store_name.upper()
+    if store_key not in all_flags:
+        all_flags[store_key] = {"skus": [], "pids": []}
+
+    existing_skus = set(all_flags[store_key].get("skus", []))
+    existing_pids = set(all_flags[store_key].get("pids", []))
+
+    updated_skus = sorted(existing_skus | conflict_skus)
+    updated_pids = sorted(existing_pids | conflict_pids)
+
+    all_flags[store_key]["skus"] = updated_skus
+    all_flags[store_key]["pids"] = updated_pids
+
     with open(conflict_flags_path, "w") as f:
         json.dump(all_flags, f, indent=2)
 
-    upload_file_to_sharepoint(conflict_flags_path, "Webstore Assets/BrightSync/cache", "conflict_flags.json")
+    upload_file_to_sharepoint(
+        conflict_flags_path,
+        "Webstore Assets/BrightSync/cache",
+        "conflict_flags.json"
+    )
 
 def run_debugger(store_key):
     if store_key.lower() == "all":
