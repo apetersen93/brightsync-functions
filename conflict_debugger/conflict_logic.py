@@ -120,24 +120,16 @@ def scan_conflicts(cfg):
     # 🔍 Then process new/updated products
     for p in all_prods:
         sku = (p.get("sku") or "").strip()
-        vendors = p.get("vendors", [])
-        pid = str(p["id"])
-        is_active = p.get("active", True)
-        updated_at = p.get("updated_at")
-        updated_dt = parse_date(updated_at) if updated_at else None
-    
-        if not should_include_product(cfg, sku, vendors):
-            continue
-        if not is_active and (not updated_dt or updated_dt.replace(tzinfo=None) < date_threshold):
-            continue
-        cached = bs_cache.get(pid)
-        if cached and cached.get("updated_at") == updated_at:
-            continue  # skip unchanged
-    
+        ...
         sku_map[sku].append(p)
+    
+    # ✅ Run conflict checks after SKU map is built
+    for sku, entries in sku_map.items():
+        if len(entries) > 1:
+            for e in entries:
+                pid = e.get("id", "N/A")
+                conflict_rows.append(["Duplicate SKU", sku, pid, "", ""])
 
-
-    # conflict checks go here...
     if conflict_rows:
         with open(out_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
