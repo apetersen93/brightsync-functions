@@ -120,10 +120,12 @@ def scan_conflicts(cfg):
     # 🔍 Then process new/updated products
     for p in all_prods:
         sku = (p.get("sku") or "").strip()
-        ...
-        sku_map[sku].append(p)
-    
-    # ✅ Run conflict checks after SKU map is built
+        pid = p.get("id")
+        if sku and pid:
+            sku_map[sku].append({"id": pid, "source": "live"})
+
+
+        # ✅ Run conflict checks after SKU map is built
     for sku, entries in sku_map.items():
         unique_ids = set(e.get("id") for e in entries if e.get("id"))
         if len(unique_ids) > 1:
@@ -132,21 +134,6 @@ def scan_conflicts(cfg):
                 conflict_rows.append(["Duplicate SKU", sku, pid, "", ""])
                 conflict_skus.add(sku)
                 conflict_pids.add(str(pid))
-
-        # 🔁 Update all_flags cache with new conflicts
-    store_key = store_name.upper()
-    if store_key not in all_flags:
-        all_flags[store_key] = {"skus": [], "pids": []}
-    
-    existing_skus = set(all_flags[store_key].get("skus", []))
-    existing_pids = set(all_flags[store_key].get("pids", []))
-    
-    # Add new conflicts
-    updated_skus = sorted(existing_skus | conflict_skus)
-    updated_pids = sorted(existing_pids | conflict_pids)
-    
-    all_flags[store_key]["skus"] = updated_skus
-    all_flags[store_key]["pids"] = updated_pids
 
 
     if conflict_rows:
@@ -165,6 +152,21 @@ def scan_conflicts(cfg):
     else:
         print(f"✅ [{store_name}] No conflicts found.")
         delete_old_conflict_reports(store_name)
+
+        # 🔁 Update all_flags cache with new conflicts
+    store_key = store_name.upper()
+    if store_key not in all_flags:
+        all_flags[store_key] = {"skus": [], "pids": []}
+    
+    existing_skus = set(all_flags[store_key].get("skus", []))
+    existing_pids = set(all_flags[store_key].get("pids", []))
+    
+    # Add new conflicts
+    updated_skus = sorted(existing_skus | conflict_skus)
+    updated_pids = sorted(existing_pids | conflict_pids)
+    
+    all_flags[store_key]["skus"] = updated_skus
+    all_flags[store_key]["pids"] = updated_pids
 
     with open(conflict_flags_path, "w") as f:
         json.dump(all_flags, f, indent=2)
