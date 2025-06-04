@@ -1,13 +1,11 @@
 {
-  "scriptFile": "__init__.py",
-  "entryPoint": "main",
   "bindings": [
     {
       "authLevel": "anonymous",
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "methods": ["get"]
+      "methods": [ "get" ]
     },
     {
       "type": "http",
