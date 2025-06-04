@@ -128,17 +128,22 @@ def scan_conflicts(cfg):
         sku_map[sku].append(p)
 
     # conflict checks go here...
-    with open(out_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Conflict Type", "SKU", "Product ID", "Name", "Sub Option"])
-        for row in conflict_rows:
-            writer.writerow(row)
-
-    upload_file_to_sharepoint(
-        out_path,
-        "Webstore Assets/BrightSync/conflict_reports",
-        os.path.basename(out_path)
-    )
+    if conflict_rows:
+        with open(out_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Conflict Type", "SKU", "Product ID", "Name", "Sub Option"])
+            writer.writerows(conflict_rows)
+        print(f"📄 Conflict report saved: {out_path}")
+    
+        upload_file_to_sharepoint(
+            out_path,
+            "Webstore Assets/BrightSync/conflict_reports",
+            os.path.basename(out_path)
+        )
+        print("📤 Uploaded conflict report to SharePoint")
+    else:
+        print(f"✅ [{store_name}] No conflicts found.")
+        delete_old_conflict_reports(store_name)
 
     with open(conflict_flags_path, "w") as f:
         json.dump(all_flags, f, indent=2)
