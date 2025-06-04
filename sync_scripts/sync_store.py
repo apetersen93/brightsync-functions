@@ -322,12 +322,13 @@ def sync_store(cfg):
         try:
             with open(out_path, "rb") as f:
                 file_bytes = f.read()
-    
+                
             upload_file_to_sharepoint(
-                filename=os.path.basename(out_path),
-                file_bytes=file_bytes,
-                target_path=f"Webstore Assets/BrightSync/sync_ready/{os.path.basename(out_path)}"
+                out_path,
+                "Webstore Assets/BrightSync/sync_ready",
+                os.path.basename(out_path)
             )
+
             print("☁️ Uploaded sync file to SharePoint.")
         except Exception as e:
             print(f"⚠️ Failed to upload to SharePoint: {e}")
