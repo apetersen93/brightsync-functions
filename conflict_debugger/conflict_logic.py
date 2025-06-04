@@ -157,8 +157,17 @@ def scan_conflicts(cfg):
     )
 
 def run_debugger(store_key):
-    cfg = load_config(store_key)
-    scan_conflicts(cfg)
+    if store_key.lower() == "all":
+        for file in os.listdir("store_configs"):
+            if file.endswith("_config.json"):
+                try:
+                    cfg = load_config(file.replace("_config.json", ""))
+                    scan_conflicts(cfg)
+                except Exception as e:
+                    print(f"❌ Failed to run debugger for {file}: {e}")
+    else:
+        cfg = load_config(store_key)
+        scan_conflicts(cfg)
 
 if __name__ == "__main__":
     args = sys.argv[1:]
