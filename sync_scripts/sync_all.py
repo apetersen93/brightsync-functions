@@ -1,10 +1,15 @@
 import subprocess
 import os
-
-CONFIG_DIR = "store_configs"
+from global_config.sharepoint_utils import download_file_from_sharepoint
 
 def get_store_keys():
-    return [f.replace("_config.json", "") for f in os.listdir(CONFIG_DIR) if f.endswith("_config.json")]
+    # Get list of config files directly from SharePoint folder
+    try:
+        files = download_file_from_sharepoint("Webstore Assets/BrightSync/store_configs", None, list_only=True)
+        return [f.replace("_config.json", "") for f in files if f.endswith("_config.json")]
+    except Exception as e:
+        print(f"❌ Failed to fetch store keys: {e}")
+        return []
 
 def main():
     stores = get_store_keys()
