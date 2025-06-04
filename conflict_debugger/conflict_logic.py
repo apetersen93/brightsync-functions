@@ -86,7 +86,7 @@ def scan_conflicts(cfg):
     store_name = cfg["store_name"]
     base_url = cfg["brightstores_url"]
     token = cfg["brightstores_token"]
-    date_threshold = datetime.now() - timedelta(days=cfg["inclusion_days"])
+    date_threshold = datetime.now() - timedelta(days=90)
     tmp_dir = "/tmp"
     os.makedirs(tmp_dir, exist_ok=True)
 
@@ -102,7 +102,13 @@ def scan_conflicts(cfg):
         data = r.json().get("products", [])
         if not data:
             break
-        all_prods.extend(data)
+
+        for p in data:
+            updated_at = parse_date(p.get("updated_at") or "2000-01-01")
+            is_active = p.get("active", True)
+            if is_active or updated_at >= date_threshold:
+                all_prods.append(p)
+
         page += 1
 
     conflict_rows = []
@@ -110,19 +116,12 @@ def scan_conflicts(cfg):
     conflict_pids = set()
     sku_map = defaultdict(list)
 
-    # 🔍 Then process new/updated products
     for p in all_prods:
-        updated_at = parse_date(p.get("updated_at")) if p.get("updated_at") else None
-        active = p.get("active", True)
-        if not active and (not updated_at or updated_at < date_threshold):
-            continue  # Skip inactive and stale
-
         sku = (p.get("sku") or "").strip()
         pid = p.get("id")
         if sku and pid:
-            sku_map[sku].append({"id": pid, "source": "live"})
+            sku_map[sku].append({"id": pid})
 
-    # ✅ Run conflict checks after SKU map is built
     for sku, entries in sku_map.items():
         id_to_entry = {}
         for e in entries:
@@ -131,7 +130,7 @@ def scan_conflicts(cfg):
                 id_to_entry[pid] = e
 
         if len(id_to_entry) > 1:
-            for pid, e in id_to_entry.items():
+            for pid in id_to_entry:
                 conflict_rows.append(["Duplicate SKU", sku, pid, "", ""])
                 conflict_skus.add(sku)
                 conflict_pids.add(str(pid))
@@ -153,7 +152,6 @@ def scan_conflicts(cfg):
         print(f"✅ [{store_name}] No conflicts found.")
         delete_old_conflict_reports(store_name)
 
-    # 🔁 Update all_flags cache with new conflicts
     store_key = store_name.upper()
     if store_key not in all_flags:
         all_flags[store_key] = {"skus": [], "pids": []}
