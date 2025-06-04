@@ -127,14 +127,18 @@ def scan_conflicts(cfg):
 
         # ✅ Run conflict checks after SKU map is built
     for sku, entries in sku_map.items():
-        unique_ids = set(e.get("id") for e in entries if e.get("id"))
-        if len(unique_ids) > 1:
-            for e in entries:
-                pid = e.get("id", "N/A")
+        # De-dupe entries by product ID
+        id_to_entry = {}
+        for e in entries:
+            pid = e.get("id")
+            if pid and pid not in id_to_entry:
+                id_to_entry[pid] = e
+    
+        if len(id_to_entry) > 1:
+            for pid, e in id_to_entry.items():
                 conflict_rows.append(["Duplicate SKU", sku, pid, "", ""])
                 conflict_skus.add(sku)
                 conflict_pids.add(str(pid))
-
 
     if conflict_rows:
         with open(out_path, "w", newline="", encoding="utf-8") as f:
