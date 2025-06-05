@@ -42,31 +42,6 @@ def load_bs_cache(store_name):
         print(f"⚠️ Failed to load bs_cache for {store_name}: {e}")
         return {}
 
-def delete_old_conflict_reports(store_name):
-    try:
-        access_token = get_graph_token()
-        site_id = os.environ["GRAPH_SITE_ID"]
-        drive_id = os.environ["GRAPH_DRIVE_ID"]
-
-        list_url = (
-            f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}"
-            f"/root:/Webstore Assets/BrightSync/conflict_reports:/children"
-        )
-        headers = { "Authorization": f"Bearer {access_token}" }
-        r = requests.get(list_url, headers=headers)
-        r.raise_for_status()
-        files = r.json().get("value", [])
-
-        for f in files:
-            name = f.get("name", "")
-            if name.startswith(f"{store_name.lower()}_conflict_report_"):
-                del_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}/items/{f['id']}"
-                del_r = requests.delete(del_url, headers=headers)
-                del_r.raise_for_status()
-                print(f"🗑️ Deleted old conflict report: {name}")
-    except Exception as e:
-        print(f"⚠️ Could not delete old conflict reports: {e}")
-
 def should_include_product(cfg, sku, vendors):
     mode = cfg.get("filter_mode", "sku")
     prefix_map = cfg.get("prefix_to_tag", {})
@@ -80,44 +55,6 @@ def should_include_product(cfg, sku, vendors):
         (mode == "all")
     )
 
-def upload_file_to_sharepoint(local_path, folder_path, filename=None):
-    filename = filename or os.path.basename(local_path)
-    access_token = get_graph_token()
-    site_id = os.environ["GRAPH_SITE_ID"]
-    drive_id = os.environ["GRAPH_DRIVE_ID"]
-
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/octet-stream"
-    }
-
-    upload_url = (
-        f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}"
-        f"/root:/{folder_path}/{filename}:/content"
-    )
-
-    # Delete existing file first if it exists
-    try:
-        check_url = (
-            f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}"
-            f"/root:/{folder_path}/{filename}"
-        )
-        meta_resp = requests.get(check_url, headers=headers)
-        if meta_resp.status_code == 200:
-            file_id = meta_resp.json().get("id")
-            del_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}/items/{file_id}"
-            del_resp = requests.delete(del_url, headers=headers)
-            del_resp.raise_for_status()
-            print(f"🧹 Deleted existing SharePoint file: {filename}")
-    except Exception as e:
-        print(f"⚠️ Could not delete existing file (safe to ignore if not found): {e}")
-
-    # Upload new file
-    with open(local_path, "rb") as f:
-        r = requests.put(upload_url, headers=headers, data=f)
-        r.raise_for_status()
-        print(f"📤 Overwrote SharePoint file: {filename}")
-
 def scan_conflicts(cfg):
     all_flags = load_conflict_flags_from_sharepoint()
     bs_cache = load_bs_cache(cfg["store_name"])
@@ -129,8 +66,7 @@ def scan_conflicts(cfg):
     os.makedirs(tmp_dir, exist_ok=True)
 
     conflict_flags_path = os.path.join(tmp_dir, "conflict_flags.json")
-    date_stamp = datetime.now().strftime("%Y%m%d")
-    out_path = os.path.join(tmp_dir, f"{store_name}_conflict_report_{date_stamp}.csv")
+    out_path = os.path.join(tmp_dir, f"{store_name}_conflict_report.csv")
 
     all_prods, page = [], 1
     while True:
@@ -150,35 +86,65 @@ def scan_conflicts(cfg):
 
     for p in all_prods:
         sku = (p.get("sku") or "").strip()
-        pid = p.get("id")
-        active = p.get("active", True)
+        pid = str(p.get("id"))
         vendors = p.get("vendors", [])
-        last_edit_raw = p.get("lastModified") or p.get("updated_at")
-        try:
-            last_edit = parse_date(last_edit_raw) if last_edit_raw else None
-        except:
-            last_edit = None
+        active = p.get("active", True)
+        last_edit = p.get("updated_at") or p.get("lastModified")
+        updated_dt = parse_date(last_edit) if last_edit else None
 
-        if not (active or (last_edit and last_edit >= date_threshold)):
-            continue
         if not should_include_product(cfg, sku, vendors):
             continue
+        if not active and (not updated_dt or updated_dt.replace(tzinfo=None) < date_threshold):
+            continue
 
-        if sku and pid:
-            sku_map[sku].append({"id": pid, "source": "live"})
+        sku_map[sku].append(p)
 
     for sku, entries in sku_map.items():
-        id_to_entry = {}
-        for e in entries:
-            pid = e.get("id")
-            if pid and pid not in id_to_entry:
-                id_to_entry[pid] = e
-
-        if len(id_to_entry) > 1:
-            for pid, e in id_to_entry.items():
-                conflict_rows.append(["Duplicate SKU", sku, pid, "", ""])
+        ids = set(e.get("id") for e in entries if e.get("id"))
+        if len(ids) > 1:
+            for e in entries:
+                conflict_rows.append(["duplicate", sku, e["id"], e.get("name", ""), ""])
                 conflict_skus.add(sku)
-                conflict_pids.add(str(pid))
+                conflict_pids.add(str(e["id"]))
+
+    for prod in all_prods:
+        sku = (prod.get("sku") or "").strip()
+        vendors = prod.get("vendors", [])
+        pid = str(prod.get("id"))
+        active = prod.get("active", True)
+        last_edit = prod.get("updated_at") or prod.get("lastModified")
+        updated_dt = parse_date(last_edit) if last_edit else None
+
+        if not should_include_product(cfg, sku, vendors):
+            continue
+        if not active and (not updated_dt or updated_dt.replace(tzinfo=None) < date_threshold):
+            continue
+        if pid in bs_cache and bs_cache[pid].get("updated_at") == last_edit:
+            continue
+
+        try:
+            r = requests.get(f"{base_url}/api/v2.6.1/products/{pid}?token={token}")
+            r.raise_for_status()
+            d = r.json()
+        except:
+            continue
+
+        def log_missing_subsku(subs, label):
+            for s in subs:
+                if not s.get("sub_sku"):
+                    conflict_rows.append(["missing_sub_sku", sku, pid, d.get("name", ""), f"{label} -> {s.get('name')}"])
+                    conflict_skus.add(sku)
+                    conflict_pids.add(pid)
+
+        for opt in d.get("options", []):
+            log_missing_subsku(opt.get("sub_options", []), "options")
+        log_missing_subsku(d.get("sub_options", []), "flat")
+
+        bs_cache[pid] = {
+            "id": pid,
+            "sku": sku,
+            "updated_at": last_edit
+        }
 
     if conflict_rows:
         with open(out_path, "w", newline="", encoding="utf-8") as f:
@@ -190,32 +156,37 @@ def scan_conflicts(cfg):
         upload_file_to_sharepoint(
             out_path,
             "Webstore Assets/BrightSync/conflict_reports",
-            os.path.basename(out_path)
+            f"{store_name}_conflict_report.csv"
         )
+        print("📤 Uploaded conflict report to SharePoint")
     else:
-        print(f"✅ [{store_name}] No conflicts found. Deleting old report if present.")
-        delete_old_conflict_reports(store_name)
-        
-    store_key = store_name.upper()
-    if store_key not in all_flags:
-        all_flags[store_key] = {"skus": [], "pids": []}
+        print(f"✅ [{store_name}] No conflicts found.")
+        try:
+            access_token = get_graph_token()
+            site_id = os.environ["GRAPH_SITE_ID"]
+            drive_id = os.environ["GRAPH_DRIVE_ID"]
+            del_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}/root:/Webstore Assets/BrightSync/conflict_reports/{store_name}_conflict_report.csv"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            requests.delete(del_url, headers=headers)
+            print(f"🧽 Removed old conflict report for {store_name}")
+        except:
+            pass
 
-    existing_skus = set(all_flags[store_key].get("skus", []))
-    existing_pids = set(all_flags[store_key].get("pids", []))
-
-    updated_skus = sorted(existing_skus | conflict_skus)
-    updated_pids = sorted(existing_pids | conflict_pids)
-
-    all_flags[store_key]["skus"] = updated_skus
-    all_flags[store_key]["pids"] = updated_pids
+    all_flags[store_name.upper()] = {
+        "skus": sorted(list(conflict_skus)),
+        "pids": sorted(list(conflict_pids)),
+        "last_checked": datetime.now().isoformat()
+    } if conflict_rows else all_flags.pop(store_name.upper(), None)
 
     with open(conflict_flags_path, "w") as f:
         json.dump(all_flags, f, indent=2)
-
+    upload_file_to_sharepoint(conflict_flags_path, "Webstore Assets/BrightSync/cache", "conflict_flags.json")
+    with open(os.path.join(tmp_dir, f"{store_name.lower()}_bs_cache.json"), "w") as f:
+        json.dump(bs_cache, f, indent=2)
     upload_file_to_sharepoint(
-        conflict_flags_path,
+        os.path.join(tmp_dir, f"{store_name.lower()}_bs_cache.json"),
         "Webstore Assets/BrightSync/cache",
-        "conflict_flags.json"
+        f"{store_name.lower()}_bs_cache.json"
     )
 
 def run_debugger(store_key):
@@ -223,23 +194,15 @@ def run_debugger(store_key):
         for file in os.listdir("store_configs"):
             if file.endswith("_config.json"):
                 try:
-                    store = file.replace("_config.json", "")
-                    print(f"🔁 Starting debugger for: {store}")
-                    cfg = load_config(store)
-                    scan_conflicts(cfg)
+                    scan_conflicts(load_config(file.replace("_config.json", "")))
                 except Exception as e:
-                    print(f"❌ Failed to run debugger for {store}: {e}")
+                    print(f"❌ Failed to run debugger for {file}: {e}")
     else:
-        try:
-            cfg = load_config(store_key)
-            scan_conflicts(cfg)
-        except Exception as e:
-            print(f"❌ Failed to run debugger for {store_key}: {e}")
+        scan_conflicts(load_config(store_key))
 
 if __name__ == "__main__":
     args = sys.argv[1:]
     if not args:
         print("📜 Usage: python conflict_debugger.py [store_key|all]")
         sys.exit(1)
-
-    run_debugger(args[0].lower())
+    run_debugger(args[0])
