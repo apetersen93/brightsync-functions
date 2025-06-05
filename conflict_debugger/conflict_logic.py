@@ -187,25 +187,24 @@ def run_debugger(store_key):
         for file in os.listdir("store_configs"):
             if file.endswith("_config.json"):
                 try:
-                    cfg = load_config(file.replace("_config.json", ""))
+                    store = file.replace("_config.json", "")
+                    print(f"🔁 Starting debugger for: {store}")
+                    cfg = load_config(store)
                     scan_conflicts(cfg)
                 except Exception as e:
-                    print(f"❌ Failed to run debugger for {file}: {e}")
+                    print(f"❌ Failed to run debugger for {store}: {e}")
     else:
-        cfg = load_config(store_key)
-        scan_conflicts(cfg)
+        try:
+            cfg = load_config(store_key)
+            scan_conflicts(cfg)
+        except Exception as e:
+            print(f"❌ Failed to run debugger for {store_key}: {e}")
 
 if __name__ == "__main__":
     args = sys.argv[1:]
     if not args:
         print("📜 Usage: python conflict_debugger.py [store_key|all]")
         sys.exit(1)
-    if args[0].lower() == "all":
-        for file in os.listdir("store_configs"):
-            if file.endswith("_config.json"):
-                try:
-                    run_debugger(file.replace("_config.json", ""))
-                except Exception as e:
-                    print(f"❌ Failed to run debugger for {file}: {e}")
-    else:
-        run_debugger(args[0].lower())
+    
+    run_debugger(args[0].lower())
+
