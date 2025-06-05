@@ -5,14 +5,16 @@ import azure.functions as func
 
 from sync_scripts.sync_store import load_config, delete_old_sync_file, sync_store
 from global_config.sharepoint_utils import download_file_from_sharepoint
+from global_config.sharepoint_utils import list_sharepoint_folder  # add this import
 
 def get_store_keys():
     try:
-        files = download_file_from_sharepoint("Webstore Assets/BrightSync/store_configs", None, list_only=True)
+        files = list_sharepoint_folder("Webstore Assets/BrightSync/store_configs")
         return [f.replace("_config.json", "") for f in files if f.endswith("_config.json")]
     except Exception as e:
         logging.error(f"❌ Failed to get store list: {e}")
         return []
+
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("🚀 Sync function triggered.")
