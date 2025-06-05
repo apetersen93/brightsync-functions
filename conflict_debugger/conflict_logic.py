@@ -175,11 +175,8 @@ def scan_conflicts(cfg):
             conflict_skus.add(sku)
             conflict_pids.add(pid)
 
-        bs_cache[pid] = {
-            "id": pid,
-            "sku": sku,
-            "updated_at": last_edit
-        }
+        if pid in bs_cache:
+            bs_cache[pid]["updated_at"] = last_edit
 
     # Write report to /tmp and upload
     out_path = os.path.join(tmp_dir, f"{store}_conflict_report.csv")
