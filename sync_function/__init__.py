@@ -33,10 +33,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 except Exception as e:
                     logging.error(f"❌ {key} failed: {e}")
                     results.append(f"❌ {key} failed: {e}")
-                time.sleep(2)  # optional delay between runs
+                time.sleep(2)  # avoid back-to-back API rate limits
             return func.HttpResponse("\n".join(results), status_code=200)
 
-        # Just one store
+        # Single store run
         cfg = load_config(store)
         delete_old_sync_file(cfg)
         sync_store(cfg)
