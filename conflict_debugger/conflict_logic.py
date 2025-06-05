@@ -80,6 +80,44 @@ def should_include_product(cfg, sku, vendors):
         (mode == "all")
     )
 
+def upload_file_to_sharepoint(local_path, folder_path, filename=None):
+    filename = filename or os.path.basename(local_path)
+    access_token = get_graph_token()
+    site_id = os.environ["GRAPH_SITE_ID"]
+    drive_id = os.environ["GRAPH_DRIVE_ID"]
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/octet-stream"
+    }
+
+    upload_url = (
+        f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}"
+        f"/root:/{folder_path}/{filename}:/content"
+    )
+
+    # Delete existing file first if it exists
+    try:
+        check_url = (
+            f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}"
+            f"/root:/{folder_path}/{filename}"
+        )
+        meta_resp = requests.get(check_url, headers=headers)
+        if meta_resp.status_code == 200:
+            file_id = meta_resp.json().get("id")
+            del_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}/items/{file_id}"
+            del_resp = requests.delete(del_url, headers=headers)
+            del_resp.raise_for_status()
+            print(f"🧹 Deleted existing SharePoint file: {filename}")
+    except Exception as e:
+        print(f"⚠️ Could not delete existing file (safe to ignore if not found): {e}")
+
+    # Upload new file
+    with open(local_path, "rb") as f:
+        r = requests.put(upload_url, headers=headers, data=f)
+        r.raise_for_status()
+        print(f"📤 Overwrote SharePoint file: {filename}")
+
 def scan_conflicts(cfg):
     all_flags = load_conflict_flags_from_sharepoint()
     bs_cache = load_bs_cache(cfg["store_name"])
@@ -154,7 +192,6 @@ def scan_conflicts(cfg):
             "Webstore Assets/BrightSync/conflict_reports",
             os.path.basename(out_path)
         )
-        print("📤 Uploaded conflict report to SharePoint")
     else:
         print(f"✅ [{store_name}] No conflicts found.")
         delete_old_conflict_reports(store_name)
