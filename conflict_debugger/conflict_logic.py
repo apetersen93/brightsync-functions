@@ -193,9 +193,9 @@ def scan_conflicts(cfg):
             os.path.basename(out_path)
         )
     else:
-        print(f"✅ [{store_name}] No conflicts found.")
+        print(f"✅ [{store_name}] No conflicts found. Deleting old report if present.")
         delete_old_conflict_reports(store_name)
-
+        
     store_key = store_name.upper()
     if store_key not in all_flags:
         all_flags[store_key] = {"skus": [], "pids": []}
