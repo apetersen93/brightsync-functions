@@ -193,12 +193,6 @@ def run_debugger(store_key):
                     scan_conflicts(cfg)
                 except Exception as e:
                     print(f"❌ Failed to run debugger for {store}: {e}")
-    else:
-        try:
-            cfg = load_config(store_key)
-            scan_conflicts(cfg)
-        except Exception as e:
-            print(f"❌ Failed to run debugger for {store_key}: {e}")
 
 if __name__ == "__main__":
     args = sys.argv[1:]
