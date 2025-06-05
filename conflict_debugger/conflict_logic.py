@@ -86,7 +86,7 @@ def scan_conflicts(cfg):
     store_name = cfg["store_name"]
     base_url = cfg["brightstores_url"]
     token = cfg["brightstores_token"]
-    date_threshold = datetime.now() - timedelta(days=90)
+    date_threshold = datetime.now() - timedelta(days=cfg["inclusion_days"])
     tmp_dir = "/tmp"
     os.makedirs(tmp_dir, exist_ok=True)
 
@@ -104,9 +104,9 @@ def scan_conflicts(cfg):
             break
 
         for p in data:
-            updated_at = parse_date(p.get("updated_at") or "2000-01-01")
-            is_active = p.get("active", True)
-            if is_active or updated_at >= date_threshold:
+            last_edit = p.get("lastModified") or p.get("updated_at")
+            active = p.get("active", True)
+            if active or (last_edit and parse_date(last_edit) >= date_threshold):
                 all_prods.append(p)
 
         page += 1
@@ -120,7 +120,7 @@ def scan_conflicts(cfg):
         sku = (p.get("sku") or "").strip()
         pid = p.get("id")
         if sku and pid:
-            sku_map[sku].append({"id": pid})
+            sku_map[sku].append({"id": pid, "source": "live"})
 
     for sku, entries in sku_map.items():
         id_to_entry = {}
@@ -130,7 +130,7 @@ def scan_conflicts(cfg):
                 id_to_entry[pid] = e
 
         if len(id_to_entry) > 1:
-            for pid in id_to_entry:
+            for pid, e in id_to_entry.items():
                 conflict_rows.append(["Duplicate SKU", sku, pid, "", ""])
                 conflict_skus.add(sku)
                 conflict_pids.add(str(pid))
