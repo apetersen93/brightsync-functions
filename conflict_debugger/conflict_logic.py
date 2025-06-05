@@ -102,22 +102,8 @@ def scan_conflicts(cfg):
         data = r.json().get("products", [])
         if not data:
             break
-
-        for p in data:
-            sku = p.get("sku")
-            active = p.get("active", True)
-            last_edit_raw = p.get("lastModified") or p.get("updated_at")
-        
-            try:
-                last_edit = parse_date(last_edit_raw) if last_edit_raw else None
-            except:
-                last_edit = None
-        
-            if active or (last_edit and last_edit >= date_threshold):
-                all_prods.append(p)
-            else:
-                print(f"⏸️ Skipped: {sku} — inactive + old (last_edit={last_edit_raw})")
-
+        all_prods.extend(data)
+        page += 1
 
     conflict_rows = []
     conflict_skus = set()
@@ -127,6 +113,19 @@ def scan_conflicts(cfg):
     for p in all_prods:
         sku = (p.get("sku") or "").strip()
         pid = p.get("id")
+        active = p.get("active", True)
+        vendors = p.get("vendors", [])
+        last_edit_raw = p.get("lastModified") or p.get("updated_at")
+        try:
+            last_edit = parse_date(last_edit_raw) if last_edit_raw else None
+        except:
+            last_edit = None
+
+        if not (active or (last_edit and last_edit >= date_threshold)):
+            continue
+        if not should_include_product(cfg, sku, vendors):
+            continue
+
         if sku and pid:
             sku_map[sku].append({"id": pid, "source": "live"})
 
@@ -193,12 +192,17 @@ def run_debugger(store_key):
                     scan_conflicts(cfg)
                 except Exception as e:
                     print(f"❌ Failed to run debugger for {store}: {e}")
+    else:
+        try:
+            cfg = load_config(store_key)
+            scan_conflicts(cfg)
+        except Exception as e:
+            print(f"❌ Failed to run debugger for {store_key}: {e}")
 
 if __name__ == "__main__":
     args = sys.argv[1:]
     if not args:
         print("📜 Usage: python conflict_debugger.py [store_key|all]")
         sys.exit(1)
-    
-    run_debugger(args[0].lower())
 
+    run_debugger(args[0].lower())
