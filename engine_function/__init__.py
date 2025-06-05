@@ -1,53 +1,64 @@
 import logging
-import subprocess
-import azure.functions as func
 import os
-import sys
+import time
+import azure.functions as func
 
-# Ensure access to SharePoint utils
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "global_config")))
-from sharepoint_utils import download_file_from_sharepoint
+from engine_core import engine_main
+from global_config.sharepoint_utils import (
+    download_file_from_sharepoint,
+    list_sharepoint_folder
+)
+
+def get_sync_ready_files():
+    try:
+        files = list_sharepoint_folder("Webstore Assets/BrightSync/sync_ready")
+        return [f for f in files if f.endswith("_sync_ready.json")]
+    except Exception as e:
+        logging.error(f"❌ Failed to list sync files: {e}")
+        return []
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("🚀 Engine function triggered.")
-
     store = req.params.get("store")
 
     try:
-        if store:
-            filename = f"{store}_sync_ready.json"
-            full_path = f"/tmp/{filename}"
+        if not store:
+            return func.HttpResponse("❗ Missing `store` query parameter", status_code=400)
 
-            try:
-                logging.info(f"📥 Attempting SharePoint download: {filename}")
-                file_bytes = download_file_from_sharepoint("Webstore Assets/BrightSync/sync_ready", filename)
-                with open(full_path, "wb") as f:
-                    f.write(file_bytes)
-                logging.info(f"✅ Downloaded to: {full_path}")
-            except Exception as e:
-                logging.error(f"❌ SharePoint download failed: {e}")
-                return func.HttpResponse(f"❌ Failed to download sync file: {e}", status_code=500)
+        results = []
 
-            result = subprocess.run(
-                ["python", "engine_function/engine_core.py", full_path],
-                check=True,
-                capture_output=True,
-                text=True
-            )
+        if store.lower() == "all":
+            for filename in get_sync_ready_files():
+                store_key = filename.split("_")[0]
+                full_path = os.path.join("/tmp", filename)
+                try:
+                    logging.info(f"📥 Downloading sync file for {store_key}")
+                    file_bytes = download_file_from_sharepoint("Webstore Assets/BrightSync/sync_ready", filename)
+                    with open(full_path, "wb") as f:
+                        f.write(file_bytes)
+                    logging.info(f"✅ Running engine for: {store_key}")
+                    msg = engine_main(full_path)
+                    results.append(msg)
+                except Exception as e:
+                    logging.error(f"❌ Failed to process {filename}: {e}")
+                    results.append(f"❌ {store_key} failed: {e}")
+                time.sleep(2)
+            return func.HttpResponse("\n".join(results), status_code=200)
 
-        else:
-            logging.info("🔁 Running full engine run")
-            result = subprocess.run(
-                ["python", "engine_function/run_all_engines.py"],
-                check=True,
-                capture_output=True,
-                text=True
-            )
+        # Single store engine run
+        filename = f"{store}_sync_ready.json"
+        full_path = f"/tmp/{filename}"
+        try:
+            file_bytes = download_file_from_sharepoint("Webstore Assets/BrightSync/sync_ready", filename)
+            with open(full_path, "wb") as f:
+                f.write(file_bytes)
+            logging.info(f"✅ Downloaded sync file for {store}")
+            msg = engine_main(full_path)
+            return func.HttpResponse(msg, status_code=200)
+        except Exception as e:
+            logging.error(f"❌ Failed to run engine for {store}: {e}")
+            return func.HttpResponse(f"❌ Engine failed for {store}: {e}", status_code=500)
 
-        logging.info("📤 STDOUT:\n" + result.stdout)
-        logging.info("📥 STDERR:\n" + result.stderr)
-        return func.HttpResponse(f"✅ Engine run complete:\n{result.stdout}", status_code=200)
-
-    except subprocess.CalledProcessError as e:
-        logging.error(e.stderr)
-        return func.HttpResponse(f"❌ Engine run failed:\n{e.stderr}", status_code=500)
+    except Exception as e:
+        logging.error(f"❌ Fatal engine error: {e}")
+        return func.HttpResponse(f"❌ Unexpected engine error: {e}", status_code=500)
