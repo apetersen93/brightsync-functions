@@ -105,16 +105,19 @@ def scan_conflicts(cfg):
 
         for p in data:
             sku = p.get("sku")
-            last_edit = p.get("lastModified") or p.get("updated_at")
             active = p.get("active", True)
+            last_edit_raw = p.get("lastModified") or p.get("updated_at")
         
-            if not active:
-                print(f"🔎 INACTIVE: {sku} | last_modified: {last_edit}")
+            try:
+                last_edit = parse_date(last_edit_raw) if last_edit_raw else None
+            except:
+                last_edit = None
         
-            if active or (last_edit and parse_date(last_edit) >= date_threshold):
+            if active or (last_edit and last_edit >= date_threshold):
                 all_prods.append(p)
+            else:
+                print(f"⏸️ Skipped: {sku} — inactive + old (last_edit={last_edit_raw})")
 
-        page += 1
 
     conflict_rows = []
     conflict_skus = set()
