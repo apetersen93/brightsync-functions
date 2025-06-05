@@ -104,8 +104,13 @@ def scan_conflicts(cfg):
             break
 
         for p in data:
+            sku = p.get("sku")
             last_edit = p.get("lastModified") or p.get("updated_at")
             active = p.get("active", True)
+        
+            if not active:
+                print(f"🔎 INACTIVE: {sku} | last_modified: {last_edit}")
+        
             if active or (last_edit and parse_date(last_edit) >= date_threshold):
                 all_prods.append(p)
 
