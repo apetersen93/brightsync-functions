@@ -1,2 +1,0 @@
-git add engine_error_log /.keep
-git commit -m "Add engine_error_log folder for Azure output"
